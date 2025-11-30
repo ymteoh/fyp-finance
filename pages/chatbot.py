@@ -119,7 +119,7 @@ header_container = st.container()
 with header_container:
     col_back, col_title, col_spacer = st.columns([0.5, 4, 0.5])
     with col_back:
-        if st.button("<-", key="back_to_dashboard", help="Return to Dashboard"):
+        if st.button("←", key="back_to_dashboard", help="Return to Dashboard"):
             if "is_income" in st.session_state:
                 del st.session_state["is_income"]
             st.switch_page("pages/dashboard.py")
@@ -799,7 +799,7 @@ for msg in st.session_state.messages:
         st.markdown(f"""
     <div class='bot-msg-container'>
         <div class='bot-avatar'>
-            <img src="https://i.ibb.co/F4B77jC0/logo.png" alt="AI Assistant">
+            <img src="https://raw.githubusercontent.com/ymteoh/fyp-finance/main/logo_circle.png" alt="AI Assistant">
         </div>
         <div class='bot-msg'>{msg['content']}</div>
     </div>
