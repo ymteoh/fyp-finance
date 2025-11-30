@@ -76,13 +76,16 @@ st.set_page_config(
 # -------------------------------
 st.markdown("""
 <style>
-    .main { 
-        background: linear-gradient(135deg, #f8fafc, #f1f5f9); 
-        padding: 20px; 
-        font-family: 'Segoe UI', 'Inter', sans-serif; 
+    .stApp {
+        background-color: white !important;
+    }
+    .main {
+        background-color: white !important;
+        padding: 20px;
+        font-family: 'Segoe UI', sans-serif;
     }
     h1 { 
-        color: #d81b60; 
+        color: black; 
         text-align: center; 
         font-weight: 700; 
     }
