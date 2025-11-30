@@ -3,9 +3,10 @@ import pandas as pd
 from sqlalchemy import create_engine, Column, Integer, String, Numeric, DateTime, func, update, delete, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from datetime import date
+from datetime import datetime
 import os
 import hashlib
+import uuid
 
 # -------------------------------
 # 1. Setup SQLite Engine
@@ -56,9 +57,7 @@ class Transaction(Base):
 def init_db():
     Base.metadata.create_all(engine)
 
-    # ← YOUR EXACT init_users.py LOGIC — ADDED HERE
     with engine.connect() as conn:
-        # Create users table if not exists (already done by ORM, but safe)
         conn.execute(text("""
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -70,8 +69,7 @@ def init_db():
             )
         """))
 
-        # Insert default admin + demo user (your exact code)
-        admin_pass = "admin2025"  # ← You can change this later
+        admin_pass = "admin2025"
         hashed_admin = hashlib.sha256(admin_pass.encode()).hexdigest()
         conn.execute(text("""
             INSERT OR IGNORE INTO users (username, email, password_hash, role) 
@@ -87,7 +85,7 @@ def init_db():
         conn.commit()
 
 # RUN AUTOMATICALLY
-init_db()  # ← THIS MAKES IT WORK ON FIRST START
+init_db()
 
 # -------------------------------
 # 5. Add New Transaction
@@ -95,6 +93,9 @@ init_db()  # ← THIS MAKES IT WORK ON FIRST START
 def add_transaction(data: dict):
     session = SessionLocal()
     try:
+        # Auto-generate UUID if not provided
+        if 'id' not in data or not data['id']:
+            data['id'] = str(uuid.uuid4())
         trans = Transaction(**data)
         session.add(trans)
         session.commit()
@@ -112,14 +113,13 @@ def get_transactions_df():
     query = "SELECT id, date, title, category, account, amount, currency, type FROM transactions ORDER BY date DESC"
     df = pd.read_sql(query, engine)
     if not df.empty:
-        df['date'] = pd.to_datetime(df['date'])  # Keep as datetime
+        df['date'] = pd.to_datetime(df['date'])
         df['amount'] = df['amount'].astype(float)
     return df
 
 # -------------------------------
 # 7. Get Last N Entries
 # -------------------------------
-# database.py → get_last_n()
 def get_last_n(n: int = 5):
     query = """
     SELECT id, date, title, category, account, amount, currency, type, is_recurring, interval 
@@ -129,49 +129,37 @@ def get_last_n(n: int = 5):
     """
     df = pd.read_sql(query, engine, params=(n,))
     if not df.empty:
-        # KEEP FULL DATETIME WITH TIME
-        df['date'] = pd.to_datetime(df['date'])  # ← PRESERVE TIME
+        df['date'] = pd.to_datetime(df['date'])
         df['amount'] = df['amount'].astype(float)
     return df
 
 # -------------------------------
-# 8. Format DataFrame for UI (Title-Case Headers)
+# 8. Format DataFrame for UI
 # -------------------------------
 def format_display_df(df):
-    """
-    Takes a raw DataFrame from get_last_n() and returns a nicely formatted copy:
-    • Date → "2025-10-31 17:44:00"
-    • Amount → "1,234.56"
-    • Recurring → "Yes"/"No"
-    • Column names → Title Case (Date, Title, Category, …)
-    """
     df = df.copy()
     df["date"] = df["date"].dt.strftime("%Y-%m-%d %H:%M:%S")
     df["amount"] = df["amount"].apply(lambda x: f"{x:,.2f}")
     df["recurring"] = df["is_recurring"].apply(lambda x: "Yes" if x else "No")
 
-    # Rename to Title Case
     return df.rename(columns={
         "date": "Date",
         "title": "Title",
         "category": "Category",
-        "account" : "Account",
+        "account": "Account",
         "amount": "Amount",
         "currency": "Currency",
         "type": "Type",
         "recurring": "Recurring"
     })
+
 # ------------------------------
 # 9. Delete/Update Transactions
-#-------------------------------
+# -------------------------------
 def update_transaction(trans_id: str, data: dict):
     session = SessionLocal()
     try:
-        stmt = (
-            update(Transaction)
-            .where(Transaction.id == trans_id)
-            .values(**data)
-        )
+        stmt = update(Transaction).where(Transaction.id == trans_id).values(**data)
         session.execute(stmt)
         session.commit()
     except Exception as e:
@@ -192,3 +180,63 @@ def delete_transaction(trans_id: str):
         raise e
     finally:
         session.close()
+
+# ================================
+# AUTO-IMPORT FULL CSV DATA (YOUR 690+ REAL TRANSACTIONS)
+# ================================
+def import_full_csv_on_startup():
+    CSV_NAME = "expenses_income_summary (3).csv"
+    
+    if not os.path.exists(CSV_NAME):
+        print(f"CSV '{CSV_NAME}' not found → skipping import")
+        return
+    
+    session = SessionLocal()
+    try:
+        count = session.execute(text("SELECT COUNT(*) FROM transactions")).scalar()
+        if count > 100:
+            print(f"Database already has {count} transactions → skipping CSV import (your data is safe!)")
+            return
+        
+        print("First time setup → Importing your 690+ beautiful real transactions from CSV...")
+        df = pd.read_csv(CSV_NAME, on_bad_lines='skip')
+        df = df.iloc[:, :11]
+        df.columns = ['id', 'time_part', 'title', 'category', 'account', 'amount', 'currency', 'type', 'is_recurring', 'interval', 'created_at']
+        
+        def parse_date(row):
+            created = str(row['created_at'])
+            if '2025' in created and '/' in created:
+                try:
+                    return datetime.strptime(created.split(' ')[0], '%d/%m/%Y')
+                except:
+                    pass
+            return datetime(2025, 1, 1)
+        
+        df['date'] = df.apply(parse_date, axis=1)
+        df['amount'] = pd.to_numeric(df['amount'], errors='coerce')
+        df = df.dropna(subset=['amount', 'date', 'title'])
+        df['id'] = df['id'].astype(str).str.strip()
+        df['title'] = df['title'].astype(str).str.title()
+        df['category'] = df['category'].astype(str).str.title()
+        df['type'] = df['type'].str.upper()
+        df['is_recurring'] = df['is_recurring'].fillna(0).astype(int)
+        
+        records = df[['id','date','title','category','account','amount','currency','type','is_recurring','interval']].to_dict(orient='records')
+        
+        stmt = text("""
+            INSERT OR IGNORE INTO transactions 
+            (id, date, title, category, account, amount, currency, type, is_recurring, interval)
+            VALUES (:id, :date, :title, :category, :account, :amount, :currency, :type, :is_recurring, :interval)
+        """)
+        session.execute(stmt, records)
+        session.commit()
+        print(f"SUCCESS → Imported {len(records)} real transactions! Your app is now STUNNING!")
+        
+    except Exception as e:
+        session.rollback()
+        print(f"CSV import error: {e}")
+    finally:
+        session.close()
+
+# RUN THIS ON EVERY STARTUP (SAFE!)
+import_full_csv_on_startup()
