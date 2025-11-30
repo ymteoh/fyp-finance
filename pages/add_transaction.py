@@ -60,10 +60,12 @@ if st.sidebar.button("Logout"):
 # -------------------------------
 st.markdown("""
     <style>
+    .stApp {
+        background-color: white !important;
+    }
     .main {
-        background: linear-gradient(135deg, #fdf2f8, #fce4ec);
-        font-family: 'Segoe UI', sans-serif;
-        padding: 20px;
+        background-color: white !important;
+        padding: 2rem;
     }
     .stButton>button:not(.back-button) {
         background: linear-gradient(145deg, #ec407a, #d81b60);
@@ -131,7 +133,7 @@ header_container = st.container()
 with header_container:
     col_back, col_title, col_spacer = st.columns([0.5, 4, 0.5])
     with col_back:
-        if st.button("<-", key="back_to_dashboard", help="Return to Dashboard"):
+        if st.button("←", key="back_to_dashboard", help="Return to Dashboard"):
             keys_to_clear = ["is_income", "is_recurring", "recurring_inter", "recurring_end_date"]
             for k in keys_to_clear:
                 if k in st.session_state:
