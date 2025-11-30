@@ -3,6 +3,9 @@ import streamlit as st
 import sqlite3
 import hashlib
 
+from database import init_db
+init_db()   # This creates the missing "users" table
+
 # -------------------------------
 # Page Config + Hide Sidebar Completely
 # -------------------------------
@@ -246,5 +249,4 @@ if not st.session_state.logged_in:
 
 else:
     # Logged in → redirect
-
     st.switch_page("pages/dashboard.py")
