@@ -170,15 +170,15 @@ currency_symbol = {
     "SEK": "kr", "NOK": "kr", "NZD": "NZ$"
 }.get(selected_currency, selected_currency + " ")
 
-# Always update welcome message to current currency
-current_welcome = f"Hi! I'm <strong>Financial Assistant</strong>. I can analyze your finances in <strong>{selected_currency} ({currency_symbol})</strong>. Ask me about spending, income, or trends!"
+# Welcome message (SAFE)
+welcome_msg = f"Hi! I'm <strong>Financial Assistant</strong>. I can analyze your finances in <strong>{selected_currency} ({currency_symbol})</strong>. Ask me about spending, income, or trends!"
 
-if "messages" not in st.session_state:
-    st.session_state.messages = [{"role": "model", "content": current_welcome}]
-else:
-    # Update the first message if currency changed
-    if "Financial Assistant" in st.session_state.messages[0]["content"]:
-        st.session_state.messages[0]["content"] = current_welcome
+if "messages" not in st.session_state or not st.session_state.messages:
+    st.session_state.messages = [{"role": "model", "content": welcome_msg}]
+elif st.session_state.messages and "Financial Assistant" in st.session_state.messages[0]["content"]:
+    # Only update if currency changed
+    if selected_currency not in st.session_state.messages[0]["content"]:
+        st.session_state.messages[0]["content"] = welcome_msg
 
 # -------------------------------
 # Load Data from finance.db
