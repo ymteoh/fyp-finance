@@ -372,7 +372,7 @@ elif section == "Data":
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE,
                         text=True,
-                        timeout=90
+                        timeout=150
                     )
 
                     if result.returncode != 0:
@@ -644,5 +644,3 @@ st.markdown(
     "</p>",
     unsafe_allow_html=True
 )
-
-
