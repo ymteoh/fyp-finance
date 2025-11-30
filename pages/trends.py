@@ -79,12 +79,12 @@ if st.sidebar.button("Logout"):
 st.markdown(f"""
 <style>
     .main {{ 
-        background: linear-gradient(135deg, #f8fafc, #f1f5f9); 
+        background: white; 
         padding: 20px; 
         font-family: 'Segoe UI', 'Inter', sans-serif; 
     }}
     h1 {{ 
-        color: #d81b60; 
+        color: black; 
         text-align: center; 
         font-weight: 700; 
     }}
