@@ -9,6 +9,8 @@ import zipfile
 import requests
 import time
 from datetime import datetime, timedelta
+import threading  # <-- ADDED
+from queue import Queue  # <-- ADDED
 
 # -------------------------------
 # Shared Currency Configuration (SAME AS TREND PAGE)
@@ -46,6 +48,14 @@ def get_exchange_rate(base="MYR", target="MYR"):
 selected_currency = st.session_state.get("selected_currency", "MYR")
 exchange_rate = get_exchange_rate("MYR", selected_currency)
 currency_symbol = currency_symbol_map.get(selected_currency, selected_currency + " ")
+
+# -------------------------------
+# Async forecast state
+# -------------------------------
+if 'forecast_in_progress' not in st.session_state:
+    st.session_state.forecast_in_progress = False
+if 'forecast_result' not in st.session_state:
+    st.session_state.forecast_result = None
 
 # -------------------------------
 # Ensure login
@@ -177,6 +187,35 @@ def create_user(username, email, password, role='user'):
         return False, f"Error creating user: {e}"
 
 # -------------------------------
+# BACKGROUND FORECAST FUNCTION
+# -------------------------------
+def run_forecast_script(target_currency: str, result_queue: Queue):
+    """Run forecast script in background thread."""
+    try:
+        env = os.environ.copy()
+        env["FORECAST_CURRENCY"] = target_currency
+        
+        result = subprocess.run(
+            [sys.executable, "financial_income_category_forecast.py"],
+            env=env,
+            cwd=os.getcwd(),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            timeout=120  # Allow up to 2 minutes
+        )
+        
+        if result.returncode == 0:
+            result_queue.put({"status": "success"})
+        else:
+            stderr_preview = '\n'.join(result.stderr.strip().split('\n')[-5:])
+            result_queue.put({"status": "error", "message": f"Script failed:\n{stderr_preview}"})
+    except subprocess.TimeoutExpired:
+        result_queue.put({"status": "error", "message": "Script timed out after 2 minutes"})
+    except Exception as e:
+        result_queue.put({"status": "error", "message": f"Unexpected error: {str(e)}"})
+
+# -------------------------------
 # HEADER: Back + Title (EXACT SAME AS TREND PAGE)
 # -------------------------------
 header_container = st.container()
@@ -293,13 +332,48 @@ elif section == "Data":
         else:
             st.warning("No data to export.")
     
-    # Export forecasts 
+    # Export forecasts (ASYNC VERSION)
     if st.button("Export All Forecasts (ZIP)", type="primary"):
+        if not st.session_state.forecast_in_progress:
+            st.session_state.forecast_in_progress = True
+            st.session_state.forecast_result = None
+            result_queue = Queue()
+            
+            thread = threading.Thread(
+                target=run_forecast_script,
+                args=(selected_currency, result_queue)
+            )
+            thread.daemon = True
+            thread.start()
+            
+            st.session_state.forecast_thread = thread
+            st.session_state.forecast_queue = result_queue
+            
+            st.info(f"⏳ Generating {selected_currency} forecasts in background... (up to 2 minutes)")
+        else:
+            st.warning("⚠️ Forecast already in progress.")
 
+    # Handle background forecast completion
+    if st.session_state.forecast_in_progress:
+        thread = st.session_state.forecast_thread
+        if not thread.is_alive():
+            try:
+                result = st.session_state.forecast_queue.get_nowait()
+                st.session_state.forecast_result = result
+            except:
+                result = {"status": "error", "message": "Unknown error"}
+            st.session_state.forecast_in_progress = False
+            
+            if result["status"] == "success":
+                st.success(f"✅ Forecasts for {selected_currency} ready!")
+            else:
+                st.error(f"❌ {result['message']}")
+
+    # If forecast succeeded, offer ZIP download
+    if st.session_state.forecast_result and st.session_state.forecast_result["status"] == "success":
         forecast_dir = "income_expense_forecast"
         os.makedirs(forecast_dir, exist_ok=True)
-
-        # Helper: Get files for currency
+        
         def get_currency_files(currency):
             files = []
             for f in os.listdir(forecast_dir):
@@ -312,109 +386,23 @@ elif section == "Data":
                             files.append(f)
             return files
 
-        if selected_currency == "MYR":
-            myr_files = get_currency_files("MYR")
-            
-            first_time_marker = os.path.join(forecast_dir, ".myr_exported")
-            if not os.path.exists(first_time_marker) and myr_files:
-                st.info("✅ Exporting MYR forecasts.")
-                existing_files = myr_files
-                
-                # Create marker so next time we check freshness
-                with open(first_time_marker, "w") as f:
-                    f.write("MYR forecasts have been exported at least once.")
-            else:
-                # Not first time → treat like other currencies (use 10-min rule)
-                existing_files = myr_files
-                fresh_files = False
-                if existing_files:
-                    latest = max((os.path.join(forecast_dir, f) for f in existing_files), key=os.path.getmtime)
-                    if datetime.now() - datetime.fromtimestamp(os.path.getmtime(latest)) < timedelta(minutes=10):
-                        fresh_files = True
-                
-                if not fresh_files:
-                    existing_files = []  # Trigger regeneration below
-                else:
-                    st.info("✅ Using recent MYR forecasts.")
+        existing_files = get_currency_files(selected_currency)
+        
+        if existing_files:
+            buffer = io.BytesIO()
+            with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+                for f in existing_files:
+                    zf.write(os.path.join(forecast_dir, f), f)
+            buffer.seek(0)
+            st.download_button(
+                "📥 Download Forecasts",
+                buffer,
+                f"forecasts_{selected_currency}_{datetime.now().strftime('%Y%m%d')}.zip",
+                "application/zip",
+                key=f"dl_forecast_{selected_currency}_{int(time.time())}"
+            )
         else:
-            # Consider files "fresh" if created in last 10 minutes
-            existing_files = get_currency_files(selected_currency)
-            fresh_files = False
-            if existing_files:
-                latest = max((os.path.join(forecast_dir, f) for f in existing_files), key=os.path.getmtime)
-                if datetime.now() - datetime.fromtimestamp(os.path.getmtime(latest)) < timedelta(minutes=10):
-                    fresh_files = True
-            
-            if not fresh_files:
-                existing_files = []  # Trigger regeneration
-            else:
-                st.info(f"✅ Using recent {selected_currency} forecasts.")
-
-        # Regenerate if needed
-        if not existing_files:
-            with st.spinner(f"🧠 Generating {selected_currency} forecasts... (up to 90 seconds)"):
-                # Clean old files for this currency
-                old_files = get_currency_files(selected_currency)
-                for f in old_files:
-                    try:
-                        os.remove(os.path.join(forecast_dir, f))
-                    except:
-                        pass
-
-                env = os.environ.copy()
-                env["FORECAST_CURRENCY"] = selected_currency
-
-                try:
-                    result = subprocess.run(
-                        [sys.executable, "financial_income_category_forecast.py"],
-                        env=env,
-                        cwd=os.getcwd(),
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE,
-                        text=True,
-                        timeout=90
-                    )
-
-                    if result.returncode != 0:
-                        st.error("❌ Forecast generation failed.")
-                        stderr_lines = result.stderr.strip().split('\n')[-5:]
-                        st.code('\n'.join(stderr_lines))
-                        st.stop()
-
-                    time.sleep(1)
-                    existing_files = get_currency_files(selected_currency)
-
-                    if not existing_files:
-                        st.error(f"❌ No {selected_currency} files created.")
-                        st.stop()
-
-                    st.success(f"✅ Fresh {selected_currency} forecasts ready!")
-
-                except subprocess.TimeoutExpired:
-                    st.error("⏱️ Timed out. Try again or reduce data.")
-                    st.stop()
-                except Exception as e:
-                    st.error(f"💥 Error: {str(e)}")
-                    st.stop()
-
-        # Create zip
-        if not existing_files:
-            st.error("❌ No forecast files to export.")
-            st.stop()
-
-        buffer = io.BytesIO()
-        with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
-            for f in existing_files:
-                zf.write(os.path.join(forecast_dir, f), f)
-
-        buffer.seek(0)
-        st.download_button(
-            "📥 Download Forecasts",
-            buffer,
-            f"forecasts_{selected_currency}_{datetime.now().strftime('%Y%m%d')}.zip",
-            "application/zip",
-            key=f"dl_forecast_{selected_currency}_{int(time.time())}"
-        )
+            st.error("❌ No forecast files found after generation.")
 
 # -------------------------------
 # ACCOUNT SETTINGS
@@ -616,7 +604,6 @@ elif section == "Admin" and user_role == "admin":
                             success, message = delete_user_by_email(admin_delete_email)
                             if success:
                                 st.success(f"✅ {message}")
-                                # Clear session state
                                 if "delete_verified" in st.session_state:
                                     del st.session_state.delete_verified
                                 if "delete_confirmed" in st.session_state:
@@ -644,4 +631,3 @@ st.markdown(
     "</p>",
     unsafe_allow_html=True
 )
-
