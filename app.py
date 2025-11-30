@@ -153,7 +153,7 @@ if not st.session_state.logged_in:
     # Logo
     st.markdown("""
         <div style="text-align: center; margin-bottom: 12px;">
-            <img src="https://i.ibb.co/F4B77jC0/logo.png" width="170" style="
+            <img src="https://raw.githubusercontent.com/ymteoh/fyp-finance/main/logo_circle.png" width="170" style="
                 border-radius: 26px; padding: 12px;
                 background: white; box-shadow: 0 10px 35px rgba(216, 27, 96, 0.35);
             ">
@@ -246,4 +246,5 @@ if not st.session_state.logged_in:
 
 else:
     # Logged in → redirect
+
     st.switch_page("pages/dashboard.py")
