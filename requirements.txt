@@ -1,0 +1,8 @@
+streamlit==1.38.0
+pandas
+plotly
+sqlalchemy
+google-generativeai
+python-dotenv
+requests
+prophet
