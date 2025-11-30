@@ -83,13 +83,16 @@ with st.sidebar:
 # -------------------------------
 st.markdown("""
     <style>
+    .stApp {
+        background-color: white !important;
+    }
     .main {
-        background: linear-gradient(135deg, #fdf2f8, #fce4ec);
+        background-color: white !important;
         padding: 20px;
         font-family: 'Segoe UI', sans-serif;
     }
     h1 {
-        color: #d81b60;
+        color: black;
         text-align: center;
         font-weight: 600;
         margin-bottom: 8px;
@@ -198,7 +201,7 @@ header_container = st.container()
 with header_container:
     col_back, col_title, col_spacer = st.columns([0.5, 4, 0.5])
     with col_back:
-        if st.button("<-", key="back_to_dashboard", help="Return to Dashboard", type="secondary"):
+        if st.button("←", key="back_to_dashboard", help="Return to Dashboard", type="secondary"):
             st.session_state.pop("is_income", None)
             st.session_state.pop("edit_id", None)
             st.switch_page("pages/dashboard.py")
