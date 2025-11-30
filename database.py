@@ -1,22 +1,39 @@
 # database.py
 import pandas as pd
-from sqlalchemy import create_engine, Column, Integer, String, Numeric, Date, DateTime, func
+from sqlalchemy import create_engine, Column, Integer, String, Numeric, DateTime, func, update, delete, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from datetime import date
-from sqlalchemy import update, delete
 import os
+import hashlib
 
 # -------------------------------
 # 1. Setup SQLite Engine
 # -------------------------------
 DB_PATH = "finance.db"
-engine = create_engine(f"sqlite:///{DB_PATH}", echo=False, future=True)
+engine = create_engine(
+    f"sqlite:///{DB_PATH}",
+    echo=False,
+    future=True,
+    connect_args={"check_same_thread": False}  # ← For Streamlit Cloud
+)
 SessionLocal = sessionmaker(bind=engine)
 Base = declarative_base()
 
 # -------------------------------
-# 2. Define Transaction Model
+# 2. User model
+# -------------------------------
+class User(Base):
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    username = Column(String, unique=True, nullable=False)
+    email = Column(String, unique=True, nullable=False)
+    password_hash = Column(String, nullable=False)
+    role = Column(String, default="user")
+    created_at = Column(DateTime, default=func.now())
+
+# -------------------------------
+# 3. Define Transaction Model
 # -------------------------------
 class Transaction(Base):
     __tablename__ = "transactions"
@@ -34,13 +51,46 @@ class Transaction(Base):
     created_at = Column(DateTime, default=func.now())
 
 # -------------------------------
-# 3. Initialize DB (Create Table)
+# 4. Initialize DB (Create Table)
 # -------------------------------
 def init_db():
     Base.metadata.create_all(engine)
 
+    # ← YOUR EXACT init_users.py LOGIC — ADDED HERE
+    with engine.connect() as conn:
+        # Create users table if not exists (already done by ORM, but safe)
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                email TEXT UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL,
+                role TEXT DEFAULT 'user',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """))
+
+        # Insert default admin + demo user (your exact code)
+        admin_pass = "admin2025"  # ← You can change this later
+        hashed_admin = hashlib.sha256(admin_pass.encode()).hexdigest()
+        conn.execute(text("""
+            INSERT OR IGNORE INTO users (username, email, password_hash, role) 
+            VALUES ('admin', 'admin@myfin.com', :hash, 'admin')
+        """), {"hash": hashed_admin})
+
+        hashed_ali = hashlib.sha256("ali123".encode()).hexdigest()
+        conn.execute(text("""
+            INSERT OR IGNORE INTO users (username, email, password_hash, role) 
+            VALUES ('ali', 'ali@gmail.com', :hash, 'user')
+        """), {"hash": hashed_ali})
+
+        conn.commit()
+
+# RUN AUTOMATICALLY
+init_db()  # ← THIS MAKES IT WORK ON FIRST START
+
 # -------------------------------
-# 4. Add New Transaction
+# 5. Add New Transaction
 # -------------------------------
 def add_transaction(data: dict):
     session = SessionLocal()
@@ -56,7 +106,7 @@ def add_transaction(data: dict):
         session.close()
 
 # -------------------------------
-# 5. Get All Transactions as DataFrame
+# 6. Get All Transactions as DataFrame
 # -------------------------------
 def get_transactions_df():
     query = "SELECT id, date, title, category, account, amount, currency, type FROM transactions ORDER BY date DESC"
@@ -67,7 +117,7 @@ def get_transactions_df():
     return df
 
 # -------------------------------
-# 6. Get Last N Entries
+# 7. Get Last N Entries
 # -------------------------------
 # database.py → get_last_n()
 def get_last_n(n: int = 5):
@@ -85,7 +135,7 @@ def get_last_n(n: int = 5):
     return df
 
 # -------------------------------
-# 7. Format DataFrame for UI (Title-Case Headers)
+# 8. Format DataFrame for UI (Title-Case Headers)
 # -------------------------------
 def format_display_df(df):
     """
@@ -112,7 +162,7 @@ def format_display_df(df):
         "recurring": "Recurring"
     })
 # ------------------------------
-# 8. Delete/Update Transactions
+# 9. Delete/Update Transactions
 #-------------------------------
 def update_transaction(trans_id: str, data: dict):
     session = SessionLocal()
