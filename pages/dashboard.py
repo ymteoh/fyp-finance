@@ -35,9 +35,12 @@ st.set_page_config(
 
 st.markdown("""
 <style>
+    .stApp {
+        background-color: white !important;
+    }
     .main {
-        background: linear-gradient(135deg, #fdf2f8 0%, #fce4ec 50%, #f8bbd0 100%);
-        font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+        background-color: white !important;
+        padding: 2rem;
     }
     .stMetric {
         background: white;
