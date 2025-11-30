@@ -143,7 +143,7 @@ with header_container:
     
     with col_title:
         st.markdown(
-            "<h1 style='text-align:center; color:#c2185b; font-weight:700; font-size:2.6em; margin-bottom:8px;'>"
+            "<h1 style='text-align:center; color:#d81b60; font-weight:700; font-size:2.6em; margin-bottom:8px;'>"
             "➕ Add New Transaction"
             "</h1>"
             "<p style='text-align:center; color:#ec407a; font-size:1.1em; margin-top:-10px;'>"
