@@ -65,7 +65,8 @@ st.markdown("""
     }
     .main {
         background-color: white !important;
-        padding: 2rem;
+        padding: 20px;
+        font-family: 'Segoe UI', sans-serif;
     }
     .stButton>button:not(.back-button) {
         background: linear-gradient(145deg, #ec407a, #d81b60);
@@ -139,9 +140,17 @@ with header_container:
                 if k in st.session_state:
                     del st.session_state[k]
             st.switch_page("pages/dashboard.py")
+    
     with col_title:
-        st.markdown("<h1 style='text-align: center'>➕ Add New Transaction</h1>", unsafe_allow_html=True)
-        st.markdown("<p style='text-align: center; color: #c2185b; font-size: 0.9em;'>Track your income and expenses effortlessly</p>", unsafe_allow_html=True)
+        st.markdown(
+            "<h1 style='text-align:center; color:#c2185b; font-weight:700; font-size:2.6em; margin-bottom:8px;'>"
+            "➕ Add New Transaction"
+            "</h1>"
+            "<p style='text-align:center; color:#ec407a; font-size:1.1em; margin-top:-10px;'>"
+            "Track your income and expenses effortlessly"
+            "</p>",
+            unsafe_allow_html=True
+        )
     with col_spacer:
         st.write("")
 
