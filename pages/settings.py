@@ -10,6 +10,8 @@ import requests
 import time
 from datetime import datetime, timedelta
 
+st.set_option('server.maxMessageSize', 200)
+
 # -------------------------------
 # Shared Currency Configuration (SAME AS TREND PAGE)
 # -------------------------------
