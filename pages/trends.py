@@ -82,6 +82,7 @@ st.markdown(f"""
         background: white; 
         padding: 20px; 
         font-family: 'Segoe UI', 'Inter', sans-serif; 
+        margin-top: -30px;
     }}
     h1 {{ 
         color: black; 
