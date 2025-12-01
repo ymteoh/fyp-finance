@@ -10,7 +10,7 @@ import hashlib
 # -------------------------------
 # 1. Setup SQLite Engine
 # -------------------------------
-DB_PATH = "finance.db"
+DB_PATH = "/tmp/finance.db"
 engine = create_engine(
     f"sqlite:///{DB_PATH}",
     echo=False,
