@@ -294,63 +294,26 @@ elif section == "Data":
             st.warning("No data to export.")
     
     # Export forecasts 
-    st.markdown("#### Export AI Forecasts")
+	if st.button("Export All Forecasts (ZIP)", type="primary"):
+		# 🔑 Replace with your actual Google Drive folder ID
+		GDRIVE_FOLDER_ID = "19sjbcmLfi_Xw_DLYPQVnf2dfyo9E_UE"  # ← EDIT THIS!
 
-    forecast_dir = "income_expense_forecast"
+		if GDRIVE_FOLDER_ID == "1YOUR_FOLDER_ID_HERE":
+			st.error("❌ Google Drive folder ID not configured. Contact admin.")
+			st.stop()
 
-    # FIRST TIME: Auto-download from Google Drive
-    if not os.path.exists(forecast_dir):
-        st.info("First time? Downloading AI forecast models from Google Drive... (only once)")
+		# Generate direct ZIP link using gdrive-zip service
+		zip_link = f"https://gdrive-zip.lmmx.dev/?id={GDRIVE_FOLDER_ID}&name=forecasts_{selected_currency}"
 
-        # YOUR GOOGLE DRIVE FILE ID HERE (upload your income_expense_forecast folder as ZIP!)
-        GOOGLE_DRIVE_FILE_ID = "19sjbcmLfi_Xw_DLYPQVnf2dfyo9E_UEH"  # CHANGE THIS!
-
-        try:
-            import gdown
-            # Auto-installs if missing
-            gdown.download(
-                f"https://drive.google.com/uc?id={GOOGLE_DRIVE_FILE_ID}",
-                "forecast_models.zip",
-                quiet=False
-            )
-            with zipfile.ZipFile("forecast_models.zip", "r") as z:
-                z.extractall(".")
-            os.remove("forecast_models.zip")
-            st.success("AI Forecast Models Downloaded & Ready!")
-            st.balloons()
-            st.rerun()  # Refresh to show files
-        except Exception as e:
-            st.error(f"❌ Download failed: {e}")
-            st.info("Make sure the file is shared as 'Anyone with the link'")
-            st.stop()
-
-    # NOW: Export all files
-    if st.button("Export All Forecasts (ZIP)", type="primary", use_container_width=True):
-        existing_files = [
-            f for f in os.listdir(forecast_dir)
-            if os.path.isfile(os.path.join(forecast_dir, f))
-            and f.lower().endswith(('.csv', '.png', '.jpg', '.jpeg', '.md', '.txt'))
-        ]
-
-        if not existing_files:
-            st.warning("❌ No forecast files found in the folder.")
-        else:
-            buffer = io.BytesIO()
-            with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
-                for filename in existing_files:
-                    zf.write(os.path.join(forecast_dir, filename), filename)
-            buffer.seek(0)
-
-            st.success(f"Packed **{len(existing_files)}** file(s)")
-
-            st.download_button(
-                label="📥 Download All Forecasts (ZIP)",
-                data=buffer,
-                file_name=f"AI_Forecasts_All_{datetime.now().strftime('%Y%m%d_%H%M')}.zip",
-                mime="application/zip",
-                use_container_width=True,
-                key="All_forecast_download"
-            )
+		st.info(f"📥 Download forecasts for **{selected_currency}**:")
+		st.markdown(
+			f'<a href="{zip_link}" target="_blank" '
+			'style="display: inline-block; background: linear-gradient(145deg, #ec407a, #d81b60); '
+			'color: white; padding: 12px 24px; border-radius: 12px; text-decoration: none; '
+			'font-weight: 600; box-shadow: 0 4px 12px rgba(216,27,96,0.3);">'
+			'Download ZIP File</a>',
+			unsafe_allow_html=True
+		)
         
 # -------------------------------
 # ACCOUNT SETTINGS
