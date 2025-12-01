@@ -10,7 +10,7 @@ import hashlib
 # -------------------------------
 # 1. Setup SQLite Engine
 # -------------------------------
-DB_PATH = "/tmp/finance.db"
+DB_PATH = "finance.db"
 engine = create_engine(
     f"sqlite:///{DB_PATH}",
     echo=False,
@@ -192,3 +192,4 @@ def delete_transaction(trans_id: str):
         raise e
     finally:
         session.close()
+
