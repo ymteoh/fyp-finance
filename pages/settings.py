@@ -67,7 +67,7 @@ user_role = st.session_state.get("user_role", "user")  # Default to 'user'
 # -------------------------------
 st.set_page_config(
     page_title="Settings",
-    page_icon="⚙️",
+    page_icon="logo_circle.png",
     layout="wide"
 )
 
@@ -542,4 +542,5 @@ st.markdown(
     "</p>",
     unsafe_allow_html=True
 )
+
 
