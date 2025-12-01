@@ -1,251 +1,193 @@
-# app.py
-from database import init_db
-init_db()   # This creates the missing "users" table
-import streamlit as st
-import sqlite3
+# database.py
+import pandas as pd
+from sqlalchemy import create_engine, Column, Integer, String, Numeric, DateTime, func, update, delete, text
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+from datetime import date
+import os
 import hashlib
 
 # -------------------------------
-# Page Config + Hide Sidebar Completely
+# 1. Setup SQLite Engine
 # -------------------------------
-st.set_page_config(
-    page_title="AI-Integrated Financial Management Web Application",
-    page_icon="logo_circle.png",  # Ensure this file exists in your app root
-    layout="centered",
-    initial_sidebar_state="collapsed"
+DB_PATH = "finance.db"
+engine = create_engine(
+    f"sqlite:///{DB_PATH}",
+    echo=False,
+    future=True,
+    connect_args={"check_same_thread": False}  # ← For Streamlit Cloud
 )
-
-# Hide sidebar using CSS
-hide_sidebar = """
-<style>
-    section[data-testid="stSidebar"] {
-        display: none !important;
-    }
-    .css-1d391kg, .css-fblp2m {
-        display: none !important;
-    }
-</style>
-"""
-st.markdown(hide_sidebar, unsafe_allow_html=True)
+SessionLocal = sessionmaker(bind=engine)
+Base = declarative_base()
 
 # -------------------------------
-# Initialize Session State
+# 2. User model
 # -------------------------------
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
-if "username" not in st.session_state:
-    st.session_state.username = None
-if "user_role" not in st.session_state:
-    st.session_state.user_role = "user"
-if "email" not in st.session_state:
-    st.session_state.email = None
-if "show_signup" not in st.session_state:
-    st.session_state.show_signup = False
+class User(Base):
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    username = Column(String, unique=True, nullable=False)
+    email = Column(String, unique=True, nullable=False)
+    password_hash = Column(String, nullable=False)
+    role = Column(String, default="user")
+    created_at = Column(DateTime, default=func.now())
 
 # -------------------------------
-# Database & Hashing
+# 3. Define Transaction Model
 # -------------------------------
-def hash_password(password: str) -> str:
-    return hashlib.sha256(password.encode()).hexdigest()
+class Transaction(Base):
+    __tablename__ = "transactions"
 
-def authenticate_user(username: str, password: str):
+    id = Column(String, primary_key=True)
+    date = Column(DateTime, nullable=False)
+    title = Column(String, nullable=False)
+    category = Column(String, nullable=False)
+    account = Column(String)
+    amount = Column(Numeric(12, 2), nullable=False)
+    currency = Column(String(3), default="MYR")
+    type = Column(String(10), nullable=False)
+    is_recurring = Column(Integer, default=0)  # 0 = No, 1 = Yes
+    interval = Column(String(10))  # "weekly" or "monthly"
+    created_at = Column(DateTime, default=func.now())
+
+# -------------------------------
+# 4. Initialize DB (Create Table + Users)
+# -------------------------------
+def init_db():
+    Base.metadata.create_all(engine)
+
+    session = SessionLocal()
     try:
-        conn = sqlite3.connect("finance.db")
-        c = conn.cursor()
-        c.execute("""
-            SELECT username, role, email FROM users 
-            WHERE LOWER(username)=? AND password_hash=?
-        """, (username.lower(), hash_password(password)))
-        result = c.fetchone()
-        conn.close()
-        return result
+        # Check if 'admin' exists
+        admin = session.query(User).filter(User.username == "admin").first()
+        if not admin:
+            admin_pass = "admin2025"
+            hashed_admin = hashlib.sha256(admin_pass.encode()).hexdigest()
+            session.add(User(
+                username="admin",
+                email="admin@myfin.com",
+                password_hash=hashed_admin,
+                role="admin"
+            ))
+
+        # Check if 'ali' exists
+        ali = session.query(User).filter(User.username == "ali").first()
+        if not ali:
+            hashed_ali = hashlib.sha256("ali123".encode()).hexdigest()
+            session.add(User(
+                username="ali",
+                email="ali@gmail.com",
+                password_hash=hashed_ali,
+                role="user"
+            ))
+
+        session.commit()
     except Exception as e:
-        print(e)
-        return None
-
-def create_user(username: str, email: str, password: str):
-    try:
-        conn = sqlite3.connect("finance.db")
-        c = conn.cursor()
-        c.execute("SELECT 1 FROM users WHERE LOWER(username)=? OR email=?", 
-                  (username.lower(), email))
-        if c.fetchone():
-            conn.close()
-            return False, "Username or email already taken"
+        session.rollback()
+        print(f"Error initializing default users: {e}")
+    finally:
+        session.close()
         
-        c.execute("""
-            INSERT INTO users (username, email, password_hash, role) 
-            VALUES (?, ?, ?, 'user')
-        """, (username, email, hash_password(password)))
-        conn.commit()
-        conn.close()
-        return True, "Account created successfully!"
+# -------------------------------
+# 5. Add New Transaction
+# -------------------------------
+def add_transaction(data: dict):
+    session = SessionLocal()
+    try:
+        trans = Transaction(**data)
+        session.add(trans)
+        session.commit()
+        return trans.id
     except Exception as e:
-        return False, f"Error: {str(e)}"
+        session.rollback()
+        raise e
+    finally:
+        session.close()
 
 # -------------------------------
-# Main Login / Signup UI
+# 6. Get All Transactions as DataFrame
 # -------------------------------
-if not st.session_state.logged_in:
+def get_transactions_df():
+    query = "SELECT id, date, title, category, account, amount, currency, type FROM transactions ORDER BY date DESC"
+    df = pd.read_sql(query, engine)
+    if not df.empty:
+        df['date'] = pd.to_datetime(df['date'])  # Keep as datetime
+        df['amount'] = df['amount'].astype(float)
+    return df
 
-    # Custom CSS (includes link-style secondary buttons)
-    st.markdown("""
-        <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&display=swap');
-        body { font-family: 'Poppins', sans-serif; }
-        .login-container {
-            max-width: 440px; margin: 8vh auto; padding: 40px;
-            background: rgba(255, 255, 255, 0.97); border-radius: 24px;
-            box-shadow: 0 15px 40px rgba(216, 27, 96, 0.25);
-            backdrop-filter: blur(12px); border: 2px solid #f06292;
-            text-align: center;
-        }
-        .title {
-            color: black;
-            font-size: 2em;
-            font-weight: 600;
-            margin-bottom: 10px;
-        }
-        .stTextInput > div > div > input {
-            border-radius: 14px !important;
-            border: 2px solid #f06292 !important;
-            padding: 14px !important;
-            font-size: 16px;
-        }
-        .stButton > button {
-            background: linear-gradient(145deg, #ec407a, #d81b60) !important;
-            color: white !important;
-            width: 100% !important;
-            padding: 14px !important;
-            border-radius: 16px !important;
-            font-weight: 600 !important;
-            font-size: 17px;
-            border: none !important;
-            box-shadow: 0 8px 20px rgba(216,27,96,0.4) !important;
-        }
-        .stButton > button:hover {
-            transform: translateY(-3px) !important;
-            box-shadow: 0 12px 25px rgba(216,27,96,0.5) !important;
-        }
-        /* Style secondary buttons as links */
-        .stButton > button[kind="secondary"] {
-            background: transparent !important;
-            border: none !important;
-            box-shadow: none !important;
-            padding: 0 !important;
-            color: #d81b60 !important;
-            font-weight: 600 !important;
-            text-decoration: underline !important;
-            text-decoration-color: #f06292 !important;
-            text-underline-offset: 3px !important;
-            font-size: 15px !important;
-            display: inline-block !important;
-            width: auto !important;
-            margin: 0 auto !important;
-            transform: none !important;
-        }
-        .stButton > button[kind="secondary"]:hover {
-            background: transparent !important;
-            color: #ec407a !important;
-            text-decoration-thickness: 2px !important;
-        }
-        </style>
-    """, unsafe_allow_html=True)
+# -------------------------------
+# 7. Get Last N Entries
+# -------------------------------
+# database.py → get_last_n()
+def get_last_n(n: int = 5):
+    query = """
+    SELECT id, date, title, category, account, amount, currency, type, is_recurring, interval 
+    FROM transactions 
+    ORDER BY date DESC, created_at DESC 
+    LIMIT ?
+    """
+    df = pd.read_sql(query, engine, params=(n,))
+    if not df.empty:
+        # KEEP FULL DATETIME WITH TIME
+        df['date'] = pd.to_datetime(df['date'])  # ← PRESERVE TIME
+        df['amount'] = df['amount'].astype(float)
+    return df
 
-    # Logo
-    st.markdown("""
-        <div style="text-align: center; margin-bottom: 12px;">
-            <img src="https://raw.githubusercontent.com/ymteoh/fyp-finance/main/logo_circle.png" width="170" style="
-                border-radius: 26px; padding: 12px;
-                background: white; box-shadow: 0 10px 35px rgba(216, 27, 96, 0.35);
-            ">
-        </div>
-        <div style="text-align: center; margin-bottom: 24px;">
-            <h2 style="color: black; font-family: 'Poppins', sans-serif; font-weight: 600; font-size: 1.4em; margin: 0;">
-                AI-Integrated Financial Management Web Application
-            </h2>
-        </div>
-    """, unsafe_allow_html=True)
+# -------------------------------
+# 8. Format DataFrame for UI (Title-Case Headers)
+# -------------------------------
+def format_display_df(df):
+    """
+    Takes a raw DataFrame from get_last_n() and returns a nicely formatted copy:
+    • Date → "2025-10-31 17:44:00"
+    • Amount → "1,234.56"
+    • Recurring → "Yes"/"No"
+    • Column names → Title Case (Date, Title, Category, …)
+    """
+    df = df.copy()
+    df["date"] = df["date"].dt.strftime("%Y-%m-%d %H:%M:%S")
+    df["amount"] = df["amount"].apply(lambda x: f"{x:,.2f}")
+    df["recurring"] = df["is_recurring"].apply(lambda x: "Yes" if x else "No")
 
-    # Title
-    if st.session_state.show_signup:
-        st.markdown("<h1 class='title'>📝 Create Account</h1>", unsafe_allow_html=True)
-    else:
-        st.markdown("<h1 class='title'>🔐 Sign in</h1>", unsafe_allow_html=True)
+    # Rename to Title Case
+    return df.rename(columns={
+        "date": "Date",
+        "title": "Title",
+        "category": "Category",
+        "account" : "Account",
+        "amount": "Amount",
+        "currency": "Currency",
+        "type": "Type",
+        "recurring": "Recurring"
+    })
+# ------------------------------
+# 9. Delete/Update Transactions
+#-------------------------------
+def update_transaction(trans_id: str, data: dict):
+    session = SessionLocal()
+    try:
+        stmt = (
+            update(Transaction)
+            .where(Transaction.id == trans_id)
+            .values(**data)
+        )
+        session.execute(stmt)
+        session.commit()
+    except Exception as e:
+        session.rollback()
+        raise e
+    finally:
+        session.close()
 
-    if st.session_state.show_signup:
-        # ============= SIGN UP FORM =============
-        with st.form("signup_form", clear_on_submit=True):
-            username = st.text_input("👤 Username", placeholder="Choose a unique username")
-            email = st.text_input("📧 Email", placeholder="you@example.com")
-            password = st.text_input("🔒 Password", type="password", placeholder="Minimum 6 characters")
-            confirm = st.text_input("🔒 Confirm Password", type="password")
-            submitted = st.form_submit_button("Create Account")
-
-            if submitted:
-                if not all([username, email, password, confirm]):
-                    st.error("⚠️ Please fill all fields")
-                elif len(username) < 3:
-                    st.error("Username too short")
-                elif len(password) < 6:
-                    st.error("Password must be 6+ characters")
-                elif password != confirm:
-                    st.error("Passwords don't match")
-                else:
-                    success, msg = create_user(username.strip(), email.strip(), password)
-                    if success:
-                        st.success("✅ Account created! Please log in.")
-                        st.session_state.show_signup = False
-                        st.rerun()
-                    else:
-                        st.error(f"❌ {msg}")
-
-        # Back to Login (Styled as Link)
-        col1, col2, col3 = st.columns([1, 2, 1])
-        with col2:
-            if st.button(
-                "Already have an account? Sign in",
-                key="login_link_button",
-                type="secondary",
-                use_container_width=True
-            ):
-                st.session_state.show_signup = False
-                st.rerun()
-
-    else:
-        # ============= LOGIN FORM =============
-        with st.form("login_form", clear_on_submit=True):
-            username = st.text_input("👤 Username", placeholder="Enter your username")
-            password = st.text_input("🔒 Password", type="password", placeholder="Enter your password")
-            login_btn = st.form_submit_button("Login")
-
-            if login_btn:
-                if not username or not password:
-                    st.error("Please enter both username and password")
-                else:
-                    user_data = authenticate_user(username, password)
-                    if user_data:
-                        st.session_state.logged_in = True
-                        st.session_state.username = user_data[0]
-                        st.session_state.user_role = user_data[1]
-                        st.session_state.email = user_data[2]
-                        st.success(f"Welcome back, {user_data[0].title()}! 🎉")
-                        st.rerun()
-                    else:
-                        st.error("❌ Invalid username or password")
-
-        # Sign Up (Styled as Link)
-        col1, col2, col3 = st.columns([1, 2, 1])
-        with col2:
-            if st.button(
-                "Don’t have an account? Sign up",
-                key="signup_link_button",
-                type="secondary",
-                use_container_width=True
-            ):
-                st.session_state.show_signup = True
-                st.rerun()
-
-else:
-    # Logged in → redirect
-    st.switch_page("pages/dashboard.py")
+def delete_transaction(trans_id: str):
+    session = SessionLocal()
+    try:
+        trans = session.query(Transaction).filter(Transaction.id == trans_id).first()
+        if trans:
+            session.delete(trans)
+            session.commit()
+    except Exception as e:
+        session.rollback()
+        raise e
+    finally:
+        session.close()
