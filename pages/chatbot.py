@@ -967,3 +967,4 @@ st.markdown(
     f"<p style='text-align:center; font-size:0.9em; color:#c2185b;'>© 2025 Financial Assistant | Currency: {selected_currency} ({currency_symbol}) | Powered by AI</p>",
     unsafe_allow_html=True
 )
+
