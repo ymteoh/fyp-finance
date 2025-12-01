@@ -60,7 +60,7 @@ st.markdown("""
     }
     h1 { margin-bottom: 5px; }
     .section-divider {
-        margin: 2rem 0;
+        margin: 1rem 0;
         border: none;
         border-top: 1px solid #f0e6f0;
     }
@@ -430,3 +430,4 @@ st.markdown(f"""
     Currency: {selected_currency} ({currency_symbol}) | Designed with 👑 using Streamlit 
 </div>   
 """, unsafe_allow_html=True)
+
