@@ -303,7 +303,7 @@ elif section == "Data":
         st.info("First time? Downloading AI forecast models from Google Drive... (only once)")
 
         # YOUR GOOGLE DRIVE FILE ID HERE (upload your income_expense_forecast folder as ZIP!)
-        GOOGLE_DRIVE_FILE_ID = "19sjbcmLfi_Xw_DLYPQVnf2dfyo9E_UEH?usp=sharing"  # CHANGE THIS!
+        GOOGLE_DRIVE_FILE_ID = "19sjbcmLfi_Xw_DLYPQVnf2dfyo9E_UEH"  # CHANGE THIS!
 
         try:
             import gdown
