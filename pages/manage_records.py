@@ -85,11 +85,13 @@ st.markdown("""
     <style>
     .stApp {
         background-color: white !important;
+        margin-top: -30px; 
     }
     .main {
         background-color: white !important;
         padding: 20px;
         font-family: 'Segoe UI', sans-serif;
+        margin-top: -20px; 
     }
     h1 {
         color: black;
