@@ -294,26 +294,26 @@ elif section == "Data":
             st.warning("No data to export.")
     
     # Export forecasts 
-	if st.button("Export All Forecasts (ZIP)", type="primary"):
-		# 🔑 Replace with your actual Google Drive folder ID
-		GDRIVE_FOLDER_ID = "19sjbcmLfi_Xw_DLYPQVnf2dfyo9E_UE"  # ← EDIT THIS!
+    if st.button("Export All Forecasts (ZIP)", type="primary"):
+        # Replace with your actual Google Drive folder ID
+        GDRIVE_FOLDER_ID = "19sjbcmLfi_Xw_DLYPQVnf2dfyo9E_UEH"  # ✅ Corrected ID
 
-		if GDRIVE_FOLDER_ID == "1YOUR_FOLDER_ID_HERE":
-			st.error("❌ Google Drive folder ID not configured. Contact admin.")
-			st.stop()
+        if GDRIVE_FOLDER_ID == "1YOUR_FOLDER_ID_HERE":
+            st.error("❌ Google Drive folder ID not configured. Contact admin.")
+            st.stop()
 
-		# Generate direct ZIP link using gdrive-zip service
-		zip_link = f"https://gdrive-zip.lmmx.dev/?id={GDRIVE_FOLDER_ID}&name=forecasts_{selected_currency}"
+        # Generate direct ZIP link using gdrive-zip service
+        zip_link = f"https://gdrive-zip.lmmx.dev/?id={GDRIVE_FOLDER_ID}&name=forecasts_{selected_currency}"
 
-		st.info(f"📥 Download forecasts for **{selected_currency}**:")
-		st.markdown(
-			f'<a href="{zip_link}" target="_blank" '
-			'style="display: inline-block; background: linear-gradient(145deg, #ec407a, #d81b60); '
-			'color: white; padding: 12px 24px; border-radius: 12px; text-decoration: none; '
-			'font-weight: 600; box-shadow: 0 4px 12px rgba(216,27,96,0.3);">'
-			'Download ZIP File</a>',
-			unsafe_allow_html=True
-		)
+        st.info(f"📥 Download forecasts for **{selected_currency}**:")
+        st.markdown(
+            f'<a href="{zip_link}" target="_blank" '
+            'style="display: inline-block; background: linear-gradient(145deg, #ec407a, #d81b60); '
+            'color: white; padding: 12px 24px; border-radius: 12px; text-decoration: none; '
+            'font-weight: 600; box-shadow: 0 4px 12px rgba(216,27,96,0.3);">'
+            'Download ZIP File</a>',
+            unsafe_allow_html=True
+        )
         
 # -------------------------------
 # ACCOUNT SETTINGS
