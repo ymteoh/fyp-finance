@@ -129,20 +129,20 @@ with open("logo_circle.png", "rb") as f:
 
 # 🎯 MATCH THE BOTTOM HEADER EXACTLY — LARGE LOGO + TITLE + SUBTITLE TIGHTLY UNDER TITLE
 st.markdown(f"""
-    <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 8px;">
+    <div style="display: flex; align-items: flex-start; gap: 20px; margin-bottom: 8px;">
         <img 
             src="data:image/png;base64,{logo_base64}" 
             alt="Financial AI Logo"
             style="width: 108px; height: 108px; 
                    border-radius: 50%; 
                    object-fit: contain;
-                   vertical-align: middle;"
+                   margin-top: 5px;"
         >
-        <div>
+        <div style="display: flex; flex-direction: column; justify-content: center;">
             <h1 style="color: #333; font-weight: 700; font-size: 2.6em; margin: 0; line-height: 1.1;">
                 AI-Integrated Financial Management Dashboard
             </h1>
-            <p style="color: #c2185b; font-size: 1.3em; margin: 4px 0 0 0; font-weight: 500; line-height: 1.1;">
+            <p style="color: #c2185b; font-size: 1.3em; margin: 8px 0 0 0; font-weight: 500; line-height: 1.1;">
                 Interactive • Insightful • Real-Time
             </p>
         </div>
@@ -427,5 +427,6 @@ st.markdown(f"""
     Currency: {selected_currency} ({currency_symbol}) | Designed with 👑 using Streamlit 
 </div>   
 """, unsafe_allow_html=True)
+
 
 
