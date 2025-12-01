@@ -66,7 +66,7 @@ if exchange_rate == 1.0 and selected_display_currency != "MYR":
 # -------------------------------
 st.set_page_config(
     page_title="Manage Records",
-    page_icon="📝",
+    page_icon="logo_circle.png",
     layout="wide"
 )
 
