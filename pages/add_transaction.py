@@ -217,15 +217,10 @@ with col_date:
     trans_date = st.date_input("Date", value=date.today())
 
 with col_time:
-    time_str = st.text_input(
-        "Time",
-        value=datetime.now().strftime("%H:%M"),
-        help="Enter time in 24-hour format (e.g., 09:30, 5pm, 14:30)",
-        max_chars=5,
-        key="time_input"
-    )
+    current_time = datetime.now().strftime("%H:%M")
+    time_input = st.text_input("Time", value=current_time, max_chars=5, help="e.g., 08:32")
     try:
-        trans_time = datetime.strptime(time_str.strip(), "%H:%M").time()
+        trans_time = datetime.strptime(time_input.strip(), "%H:%M").time()
     except:
         trans_time = datetime.now().time()
 
@@ -287,6 +282,7 @@ if 'db_initialized' not in st.session_state:
 # -------------------------------
 # Submit Button & Save
 # -------------------------------
+col_btn, col_spacer = st.columns([1, 3])
 if st.button("✅ Add Record", type="primary"):
     if not name.strip():
         st.error("⚠️ Please enter a Name.")
