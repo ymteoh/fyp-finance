@@ -63,11 +63,13 @@ st.markdown("""
     <style>
     .stApp {
         background-color: white !important;
+        margin-top: -30px; 
     }
     .main {
         background-color: white !important;
         padding: 20px;
         font-family: 'Segoe UI', sans-serif;
+        margin-top: -20px; 
     }
     .stButton>button:not(.back-button) {
         background: linear-gradient(145deg, #ec407a, #d81b60);
