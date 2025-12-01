@@ -140,7 +140,7 @@ st.markdown(f"""
                    vertical-align: middle;"
         >
         <div>
-            <h1 style="color: #333; font-weight: 700; font-size: 2.8em; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+            <h1 style="color: #333; font-weight: 700; font-size: 2.6em; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                 AI-Integrated Financial Management Dashboard
             </h1>
             <p style="color: #c2185b; font-size: 1.3em; margin: -4px 0 0 0; font-weight: 500; line-height: 1.1; white-space: nowrap;">
