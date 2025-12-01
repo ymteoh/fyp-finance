@@ -61,7 +61,7 @@ currency_symbol = currency_symbol_map.get(selected_currency, selected_currency +
 
 st.set_page_config(
     page_title=f"AI Forecast ({selected_currency})",
-    page_icon="📈",
+    page_icon="logo_circle.png",
     layout="wide"
 )
 
