@@ -139,17 +139,15 @@ st.markdown(f"""
                    vertical-align: middle;"
         >
         <div>
-            <h1 style="color: #333; font-weight: 700; font-size: 2.8em; margin: 0;">
+            <h1 style="color: #333; font-weight: 700; font-size: 2.8em; margin: 0; line-height: 1.1;">
                 AI-Integrated Financial Management Dashboard
             </h1>
-            <p style="color: #c2185b; font-size: 1.3em; margin: -4px 0 0 0; font-weight: 500; line-height: 1.1;">
+            <p style="color: #c2185b; font-size: 1.3em; margin: 4px 0 0 0; font-weight: 500; line-height: 1.1;">
                 Interactive • Insightful • Real-Time
             </p>
         </div>
     </div>
 """, unsafe_allow_html=True)
-
-st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
 
 # ────────────────────────────────────────────────
 # LOAD DATA FROM finance.db
@@ -429,3 +427,4 @@ st.markdown(f"""
     Currency: {selected_currency} ({currency_symbol}) | Designed with 👑 using Streamlit 
 </div>   
 """, unsafe_allow_html=True)
+
