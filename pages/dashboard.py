@@ -37,12 +37,10 @@ st.markdown("""
 <style>
     .stApp {
         background-color: white !important;
-        margin-top: -30px;
     }
     .main {
         background-color: white !important;
         padding: 2rem;
-        margin-top: -20px;
     }
     .stMetric {
         background: white;
