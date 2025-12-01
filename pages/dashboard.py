@@ -136,13 +136,13 @@ st.markdown(f"""
             style="width: 108px; height: 108px; 
                    border-radius: 50%; 
                    object-fit: contain;
-                   margin-top: 5px;"
+                   margin-top: 8px;"
         >
-        <div style="display: flex; flex-direction: column; justify-content: center;">
+        <div style="display: flex; flex-direction: column; justify-content: flex-start;">
             <h1 style="color: #333; font-weight: 700; font-size: 2.6em; margin: 0; line-height: 1.1;">
                 AI-Integrated Financial Management Dashboard
             </h1>
-            <p style="color: #c2185b; font-size: 1.3em; margin: 8px 0 0 0; font-weight: 500; line-height: 1.1;">
+            <p style="color: #c2185b; font-size: 1.3em; margin: 4px 0 0 0; font-weight: 500; line-height: 1.1;">
                 Interactive • Insightful • Real-Time
             </p>
         </div>
@@ -427,6 +427,7 @@ st.markdown(f"""
     Currency: {selected_currency} ({currency_symbol}) | Designed with 👑 using Streamlit 
 </div>   
 """, unsafe_allow_html=True)
+
 
 
 
