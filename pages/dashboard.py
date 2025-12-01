@@ -128,6 +128,7 @@ with open("logo_circle.png", "rb") as f:
     logo_base64 = base64.b64encode(f.read()).decode()
 
 # 🎯 MATCH THE BOTTOM HEADER EXACTLY — LARGE LOGO + TITLE + SUBTITLE TIGHTLY UNDER TITLE
+# 🎯 MATCH THE BOTTOM HEADER EXACTLY — LARGE LOGO + TITLE + SUBTITLE TIGHTLY UNDER TITLE
 st.markdown(f"""
     <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 8px;">
         <img 
@@ -139,10 +140,10 @@ st.markdown(f"""
                    vertical-align: middle;"
         >
         <div>
-            <h1 style="color: #333; font-weight: 700; font-size: 2.8em; margin: 0;">
+            <h1 style="color: #333; font-weight: 700; font-size: 2.8em; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                 AI-Integrated Financial Management Dashboard
             </h1>
-            <p style="color: #c2185b; font-size: 1.3em; margin: -4px 0 0 0; font-weight: 500; line-height: 1.1;">
+            <p style="color: #c2185b; font-size: 1.3em; margin: -4px 0 0 0; font-weight: 500; line-height: 1.1; white-space: nowrap;">
                 Interactive • Insightful • Real-Time
             </p>
         </div>
