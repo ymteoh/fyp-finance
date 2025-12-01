@@ -295,99 +295,96 @@ if 'db_initialized' not in st.session_state:
 # -------------------------------
 # Submit Button & Save
 # -------------------------------
-col_btn, col_spacer = st.columns([1, 3])
-
-with col_btn:
-    if st.button("✅ Add Record", type="primary"):
-        if not name.strip():
-            st.error("⚠️ Please enter a Name.")
+if st.button("✅ Add Record", type="primary"):
+    if not name.strip():
+        st.error("⚠️ Please enter a Name.")
+        st.stop()
+    if not amount_str.strip():
+        st.error("⚠️ Please enter an Amount.")
+        st.stop()
+    
+    try:
+        raw_amount = float(amount_str.replace(",", "").strip())
+        if raw_amount <= 0:
+            st.error("⚠️ Amount must be greater than 0.")
             st.stop()
-        if not amount_str.strip():
-            st.error("⚠️ Please enter an Amount.")
-            st.stop()
-        
-        try:
-            raw_amount = float(amount_str.replace(",", "").strip())
-            if raw_amount <= 0:
-                st.error("⚠️ Amount must be greater than 0.")
-                st.stop()
-        except ValueError:
-            st.error("⚠️ Please enter a valid number (e.g., 1500 or 1,234.56).")
-            st.stop()
+    except ValueError:
+        st.error("⚠️ Please enter a valid number (e.g., 1500 or 1,234.56).")
+        st.stop()
 
-        if not category:
-            st.error("⚠️ Please select a Category.")
-            st.stop()
+    if not category:
+        st.error("⚠️ Please select a Category.")
+        st.stop()
 
-        # ✅ Convert user-input amount to MYR for storage
-        amount_in_myr = convert_to_myr(raw_amount, currency)
+    # ✅ Convert user-input amount to MYR for storage
+    amount_in_myr = convert_to_myr(raw_amount, currency)
 
-        record_type = "INCOME" if st.session_state.is_income else "EXPENSE"
-        base_datetime = trans_datetime
-        entries_to_add = []
+    record_type = "INCOME" if st.session_state.is_income else "EXPENSE"
+    base_datetime = trans_datetime
+    entries_to_add = []
 
-        if st.session_state.is_recurring:
-            interval = st.session_state.recurring_inter
-            end_date = st.session_state.recurring_end_date
-            max_end = end_date if end_date else (trans_datetime.date() + timedelta(days=365))
+    if st.session_state.is_recurring:
+        interval = st.session_state.recurring_inter
+        end_date = st.session_state.recurring_end_date
+        max_end = end_date if end_date else (trans_datetime.date() + timedelta(days=365))
 
-            current_dt = trans_datetime
-            while current_dt.date() <= max_end:
-                entries_to_add.append({
-                    "id": str(uuid.uuid4()),
-                    "date": current_dt,
-                    "title": name.strip(),
-                    "category": category,
-                    "account": account,
-                    "amount": amount_in_myr,      # ← STORED IN MYR
-                    "currency": currency,         # ← ORIGINAL CURRENCY (for display/edit)
-                    "type": record_type,
-                    "is_recurring": 1,
-                    "interval": interval.lower()
-                })
-
-                if interval == "Daily":
-                    current_dt += timedelta(days=1)
-                elif interval == "Weekly":
-                    current_dt += timedelta(weeks=1)
-                elif interval == "Monthly":
-                    current_dt += relativedelta(months=1)
-                else:
-                    current_dt += relativedelta(years=1)
-        else:
+        current_dt = trans_datetime
+        while current_dt.date() <= max_end:
             entries_to_add.append({
                 "id": str(uuid.uuid4()),
-                "date": base_datetime,
+                "date": current_dt,
                 "title": name.strip(),
                 "category": category,
                 "account": account,
                 "amount": amount_in_myr,      # ← STORED IN MYR
-                "currency": currency,         # ← ORIGINAL CURRENCY
+                "currency": currency,         # ← ORIGINAL CURRENCY (for display/edit)
                 "type": record_type,
-                "is_recurring": 0,
-                "interval": None
+                "is_recurring": 1,
+                "interval": interval.lower()
             })
 
-        try:
-            for entry in entries_to_add:
-                add_transaction(entry)
+            if interval == "Daily":
+                current_dt += timedelta(days=1)
+            elif interval == "Weekly":
+                current_dt += timedelta(weeks=1)
+            elif interval == "Monthly":
+                current_dt += relativedelta(months=1)
+            else:
+                current_dt += relativedelta(years=1)
+    else:
+        entries_to_add.append({
+            "id": str(uuid.uuid4()),
+            "date": base_datetime,
+            "title": name.strip(),
+            "category": category,
+            "account": account,
+            "amount": amount_in_myr,      # ← STORED IN MYR
+            "currency": currency,         # ← ORIGINAL CURRENCY
+            "type": record_type,
+            "is_recurring": 0,
+            "interval": None
+        })
 
-            st.success(
-                f"✅ Saved **{len(entries_to_add)}** transaction(s): "
-                f"**{name.strip()}** → {raw_amount:,.2f} {currency} ({record_type})"
-            )
-            # THIS IS THE NUCLEAR FIX — FORCES INSTANT REFRESH EVERYWHERE
-            st.cache_data.clear()                     # Clears ALL Streamlit cache
-            st.session_state.new_transaction_added = True     
+    try:
+        for entry in entries_to_add:
+            add_transaction(entry)
 
-            # Reset form
-            st.session_state.is_income = False
-            st.session_state.is_recurring = False
-            st.session_state.recurring_inter = "Monthly"
-            st.session_state.recurring_end_date = None
+        st.success(
+            f"✅ Saved **{len(entries_to_add)}** transaction(s): "
+            f"**{name.strip()}** → {raw_amount:,.2f} {currency} ({record_type})"
+        )
+        # THIS IS THE NUCLEAR FIX — FORCES INSTANT REFRESH EVERYWHERE
+        st.cache_data.clear()                     # Clears ALL Streamlit cache
+        st.session_state.new_transaction_added = True     
 
-        except Exception as e:
-            st.error(f"Database error: {e}")
+        # Reset form
+        st.session_state.is_income = False
+        st.session_state.is_recurring = False
+        st.session_state.recurring_inter = "Monthly"
+        st.session_state.recurring_end_date = None
+
+    except Exception as e:
+        st.error(f"Database error: {e}")
 
 # -------------------------------
 # Show Last 5 Entries 
