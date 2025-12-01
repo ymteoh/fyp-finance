@@ -119,11 +119,17 @@ st.markdown("""
         font-weight: 600;
     }
     .success-msg {
-        background: #e8f5e9;
-        color: #2e7d32;
-        padding: 12px;
-        border-radius: 8px;
-        font-weight: 500;
+    background: #e8f5e9 !important;
+    color: #2e7d32 !important;
+    padding: 14px 20px !important;
+    border-radius: 16px !important;
+    font-weight: 600 !important;
+    font-size: 1.05em !important;
+    white-space: nowrap !important;        
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 100% !important;
+    box-shadow: 0 4px 12px rgba(46, 125, 50, 0.15) !important;
     }
     </style>
     """, unsafe_allow_html=True)
