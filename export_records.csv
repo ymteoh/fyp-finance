@@ -1,0 +1,5 @@
+id,date,title,category,account,amount,currency,type,is_recurring,interval,created_at,Unnamed: 8, 
+e269e96b-b7c0-4207-869c-19fa5220f23e,2024-08-31 00:00:00.000000,Water Bill,Bills,Savings Bank,15.0,MYR,EXPENSE,0,,2025-10-31 09:18:56,,
+934fb465-5386-4d45-890d-bc33c969f88c,2024-08-31 00:00:00.000000,Water Bill,Bills,Savings Bank,15.0,MYR,EXPENSE,0,,2025-10-31 09:19:03,,
+a896f6d9-269d-4e3d-9a0e-465a1a38eaac,2025-10-31 17:44:07.963371,Strawberry,Food,Cash,20.0,MYR,EXPENSE,0,,2025-10-31 09:44:07,,
+c715d417-6939-41e0-b3fc-acbfd43842d2,2025-11-13 01:19:45.106675,Economic Rice,Food,Cash,11.5,MYR,EXPENSE,0,,2025-11-12 17:19:45,,
