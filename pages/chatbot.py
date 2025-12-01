@@ -809,7 +809,7 @@ if st.session_state.is_typing:
     st.markdown("""
         <div class='bot-msg-container'>
             <div class='bot-avatar'>
-                <img src="https://i.ibb.co/F4B77jC0/logo.png" alt="AI Assistant">
+                <img src="https://raw.githubusercontent.com/ymteoh/fyp-finance/main/logo_circle.png" alt="AI Assistant">
             </div>
             <div class='typing-indicator'>
                 <div class='typing-dot'></div>
