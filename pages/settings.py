@@ -294,23 +294,23 @@ elif section == "Data":
             st.warning("No data to export.")
     
     # Export forecasts 
-	if st.button("Export All Forecasts (ZIP)", type="primary"):
-		zip_filename = f"forecasts_{selected_currency}.zip"
-		zip_path = os.path.join("forecast_zips", zip_filename)
+    if st.button("Export All Forecasts (ZIP)", type="primary"):
+        zip_filename = f"forecasts_{selected_currency}.zip"
+        zip_path = os.path.join("forecast_zips", zip_filename)
 
-		if not os.path.exists(zip_path):
-			st.error(f"❌ Forecast ZIP for {selected_currency} not found.")
-			st.caption("Make sure `forecast_zips/` is in your repo with all currency ZIPs.")
-			st.stop()
+        if not os.path.exists(zip_path):
+            st.error(f"❌ Forecast ZIP for {selected_currency} not found.")
+            st.caption("Make sure `forecast_zips/` is in your repo with all currency ZIPs.")
+            st.stop()
 
-		with open(zip_path, "rb") as f:
-			st.download_button(
-				label="📥 Download ZIP",
-				data=f,
-				file_name=zip_filename,
-				mime="application/zip",
-				key=f"download_forecast_zip_{selected_currency}"
-			)
+        with open(zip_path, "rb") as f:
+            st.download_button(
+                label="📥 Download ZIP",
+                data=f,
+                file_name=zip_filename,
+                mime="application/zip",
+                key=f"download_forecast_zip_{selected_currency}"
+            )
         
 # -------------------------------
 # ACCOUNT SETTINGS
