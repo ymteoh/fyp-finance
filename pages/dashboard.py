@@ -128,26 +128,29 @@ with open("logo_circle.png", "rb") as f:
     logo_base64 = base64.b64encode(f.read()).decode()
 
 # 🎯 MATCH THE BOTTOM HEADER EXACTLY — LARGE LOGO + TITLE + SUBTITLE TIGHTLY UNDER TITLE
+# 🎯 MATCH THE BOTTOM HEADER EXACTLY — LARGE LOGO + TITLE + SUBTITLE TIGHTLY UNDER TITLE
 st.markdown(f"""
-    <div style="display: flex; align-items: flex-start; gap: 20px; margin-bottom: 8px;">
+    <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 8px;">
         <img 
             src="data:image/png;base64,{logo_base64}" 
             alt="Financial AI Logo"
             style="width: 108px; height: 108px; 
                    border-radius: 50%; 
                    object-fit: contain;
-                   margin-top: 8px;"
+                   vertical-align: middle;"
         >
-        <div style="display: flex; flex-direction: column; justify-content: flex-start;">
-            <h1 style="color: #333; font-weight: 700; font-size: 2.6em; margin: 0; line-height: 1.1;">
+        <div>
+            <h1 style="color: #333; font-weight: 700; font-size: 2.6em; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                 AI-Integrated Financial Management Dashboard
             </h1>
-            <p style="color: #c2185b; font-size: 1.3em; margin: 4px 0 0 0; font-weight: 500; line-height: 1.1;">
+            <p style="color: #c2185b; font-size: 1.3em; margin: -4px 0 0 0; font-weight: 500; line-height: 1.1; white-space: nowrap;">
                 Interactive • Insightful • Real-Time
             </p>
         </div>
     </div>
 """, unsafe_allow_html=True)
+
+st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
 
 # ────────────────────────────────────────────────
 # LOAD DATA FROM finance.db
@@ -427,7 +430,3 @@ st.markdown(f"""
     Currency: {selected_currency} ({currency_symbol}) | Designed with 👑 using Streamlit 
 </div>   
 """, unsafe_allow_html=True)
-
-
-
-
