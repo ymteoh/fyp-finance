@@ -5,6 +5,7 @@ import uuid
 from datetime import datetime, date, time, timedelta
 from dateutil.relativedelta import relativedelta
 from database import init_db, add_transaction, get_last_n, format_display_df
+from datetime import datetime, date, time, timedelta, timezone
 import requests
 import os
 
@@ -217,12 +218,18 @@ with col_date:
     trans_date = st.date_input("Date", value=date.today())
 
 with col_time:
-    current_time = datetime.now().strftime("%H:%M")
-    time_input = st.text_input("Time", value=current_time, max_chars=5, help="24-hour format")
+    malaysia_time = datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=8)))
+    current_time = malaysia_time.strftime("%H:%M")
+    time_input = st.text_input(
+        "Time",
+        value=current_time,
+        max_chars=5,
+        help="Malaysia time (UTC+8)"
+    )
     try:
         trans_time = datetime.strptime(time_input.strip(), "%H:%M").time()
     except:
-        trans_time = datetime.now().time()
+        trans_time = malaysia_time.time()
 
 trans_datetime = datetime.combine(trans_date, trans_time)
 
