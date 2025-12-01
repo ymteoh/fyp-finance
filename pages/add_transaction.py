@@ -45,7 +45,7 @@ if not st.session_state.get("logged_in"):
 # -------------------------------
 st.set_page_config(
     page_title="Add Transaction",
-    page_icon="➕",
+    page_icon="logo_circle.png",
     layout="wide"
 )
 
