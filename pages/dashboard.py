@@ -27,8 +27,8 @@ if not st.session_state.get("logged_in"):
 # PAGE CONFIG & MODERN PINK THEME
 # ------------------------------------------------
 st.set_page_config(
-    page_title="AI Financial Dashboard",
-    page_icon="💰",
+    page_title="AI-Integrated Financial Management Dashboard",
+    page_icon="logo_circle.png",
     layout="wide",
     initial_sidebar_state="expanded"
 )
