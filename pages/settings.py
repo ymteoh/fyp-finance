@@ -297,127 +297,23 @@ elif section == "Data":
     
     # Export forecasts 
     if st.button("Export All Forecasts (ZIP)", type="primary"):
+        zip_filename = f"forecasts_{selected_currency}.zip"
+        zip_path = os.path.join("forecast_zips", zip_filename)
 
-        forecast_dir = "income_expense_forecast"
-        os.makedirs(forecast_dir, exist_ok=True)
-
-        # Helper: Get files for currency
-        def get_currency_files(currency):
-            files = []
-            for f in os.listdir(forecast_dir):
-                if f.endswith((".csv", ".png", ".md")):
-                    if currency == "MYR":
-                        if not any(f"_{c}." in f for c in currency_options if c != "MYR"):
-                            files.append(f)
-                    else:
-                        if f"_{currency}." in f:
-                            files.append(f)
-            return files
-
-        if selected_currency == "MYR":
-            myr_files = get_currency_files("MYR")
-            
-            first_time_marker = os.path.join(forecast_dir, ".myr_exported")
-            if not os.path.exists(first_time_marker) and myr_files:
-                st.info("✅ Exporting MYR forecasts.")
-                existing_files = myr_files
-                
-                # Create marker so next time we check freshness
-                with open(first_time_marker, "w") as f:
-                    f.write("MYR forecasts have been exported at least once.")
-            else:
-                # Not first time → treat like other currencies (use 10-min rule)
-                existing_files = myr_files
-                fresh_files = False
-                if existing_files:
-                    latest = max((os.path.join(forecast_dir, f) for f in existing_files), key=os.path.getmtime)
-                    if datetime.now() - datetime.fromtimestamp(os.path.getmtime(latest)) < timedelta(minutes=10):
-                        fresh_files = True
-                
-                if not fresh_files:
-                    existing_files = []  # Trigger regeneration below
-                else:
-                    st.info("✅ Using recent MYR forecasts.")
-        else:
-            # Consider files "fresh" if created in last 10 minutes
-            existing_files = get_currency_files(selected_currency)
-            fresh_files = False
-            if existing_files:
-                latest = max((os.path.join(forecast_dir, f) for f in existing_files), key=os.path.getmtime)
-                if datetime.now() - datetime.fromtimestamp(os.path.getmtime(latest)) < timedelta(minutes=10):
-                    fresh_files = True
-            
-            if not fresh_files:
-                existing_files = []  # Trigger regeneration
-            else:
-                st.info(f"✅ Using recent {selected_currency} forecasts.")
-
-        # Regenerate if needed
-        if not existing_files:
-            with st.spinner(f"🧠 Generating {selected_currency} forecasts... (up to 90 seconds)"):
-                # Clean old files for this currency
-                old_files = get_currency_files(selected_currency)
-                for f in old_files:
-                    try:
-                        os.remove(os.path.join(forecast_dir, f))
-                    except:
-                        pass
-
-                env = os.environ.copy()
-                env["FORECAST_CURRENCY"] = selected_currency
-
-                try:
-                    result = subprocess.run(
-                        [sys.executable, "financial_income_category_forecast.py"],
-                        env=env,
-                        cwd=os.getcwd(),
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE,
-                        text=True,
-                        timeout=90
-                    )
-
-                    if result.returncode != 0:
-                        st.error("❌ Forecast generation failed.")
-                        stderr_lines = result.stderr.strip().split('\n')[-5:]
-                        st.code('\n'.join(stderr_lines))
-                        st.stop()
-
-                    time.sleep(1)
-                    existing_files = get_currency_files(selected_currency)
-
-                    if not existing_files:
-                        st.error(f"❌ No {selected_currency} files created.")
-                        st.stop()
-
-                    st.success(f"✅ Fresh {selected_currency} forecasts ready!")
-
-                except subprocess.TimeoutExpired:
-                    st.error("⏱️ Timed out. Try again or reduce data.")
-                    st.stop()
-                except Exception as e:
-                    st.error(f"💥 Error: {str(e)}")
-                    st.stop()
-
-        # Create zip
-        if not existing_files:
-            st.error("❌ No forecast files to export.")
+        if not os.path.exists(zip_path):
+            st.error(f"❌ Forecast ZIP for {selected_currency} not found.")
+            st.caption("Make sure `forecast_zips/` is in your repo with all currency ZIPs.")
             st.stop()
 
-        buffer = io.BytesIO()
-        with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
-            for f in existing_files:
-                zf.write(os.path.join(forecast_dir, f), f)
-
-        buffer.seek(0)
-        st.download_button(
-            "📥 Download Forecasts",
-            buffer,
-            f"forecasts_{selected_currency}_{datetime.now().strftime('%Y%m%d')}.zip",
-            "application/zip",
-            key=f"dl_forecast_{selected_currency}_{int(time.time())}"
-        )
-
+        with open(zip_path, "rb") as f:
+            st.download_button(
+                label="📥 Download ZIP",
+                data=f,
+                file_name=zip_filename,
+                mime="application/zip",
+                key=f"download_forecast_zip_{selected_currency}"
+            )
+        
 # -------------------------------
 # ACCOUNT SETTINGS
 # -------------------------------
@@ -646,3 +542,4 @@ st.markdown(
     "</p>",
     unsafe_allow_html=True
 )
+
