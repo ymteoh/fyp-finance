@@ -8,39 +8,6 @@ from datetime import datetime
 from dotenv import load_dotenv
 
 # -------------------------------
-# FINAL FIX: FORCE MALAYSIA TIME (MYT) – NO MORE UTC CONVERSION!
-# -------------------------------
-from zoneinfo import ZoneInfo
-import pandas as pd
-
-# Streamlit Cloud runs in UTC → this forces everything to Malaysia Time
-MYT = ZoneInfo("Asia/Kuala_Lumpur")
-
-# Monkey patch pandas to always use Malaysia time (this is the nuclear fix)
-_original_now = pd.Timestamp.now
-_original_today = pd.Timestamp.today
-
-def myt_now(tz=None):
-    return _original_now(tz=MYT).normalize()
-
-def myt_today(tz=None):
-    return myt_now(tz)
-
-pd.Timestamp.now = myt_now
-pd.Timestamp.today = myt_today
-
-# Also fix .to_period() to use MYT
-_original_to_period = pd.Series.dt.to_period
-def fixed_to_period(s, freq):
-    if s.dt.tz is None:
-        # Assume naive timestamps are already in MYT
-        return _original_to_period(s, freq)
-    else:
-        return _original_to_period(s.dt.tz_convert(MYT), freq)
-
-pd.Series.dt.to_period = property(fixed_to_period)
-
-# -------------------------------
 # Load environment variables (from .env)
 # -------------------------------
 load_dotenv()
