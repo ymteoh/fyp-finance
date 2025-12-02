@@ -220,32 +220,30 @@ currency_options = [
 ]
 currency = st.selectbox("Currency", currency_options, index=currency_options.index("MYR"))
 
-# Define once near the top (or reuse if already defined)
-MALAYSIA_TZ = timezone(timedelta(hours=8))
-
 st.markdown("### 📅 Date & Time")
 col_date, col_time = st.columns(2)
 
+# ✅ Malaysia date
+malaysia_now = datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=8)))
+malaysia_today = malaysia_now.date()
+malaysia_time_str = malaysia_now.strftime("%H:%M")
+
 with col_date:
-    malaysia_today = datetime.now(MALAYSIA_TZ).date()
     trans_date = st.date_input("Date", value=malaysia_today)
 
 with col_time:
-    malaysia_now = datetime.now(MALAYSIA_TZ)
-    current_time = malaysia_now.strftime("%H:%M")
     time_input = st.text_input(
         "Time",
-        value=current_time,
+        value=malaysia_time_str,
         max_chars=5,
         help="Malaysia time (UTC+8)"
     )
     try:
         trans_time = datetime.strptime(time_input.strip(), "%H:%M").time()
-    except ValueError:
+    except:
         trans_time = malaysia_now.time()
 
-# Combine and localize
-trans_datetime = datetime.combine(trans_date, trans_time).replace(tzinfo=MALAYSIA_TZ)
+trans_datetime = datetime.combine(trans_date, trans_time)
 
 # -------------------------------
 # RECURRING TOGGLE + END DATE
