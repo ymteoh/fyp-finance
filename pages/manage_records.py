@@ -1,3 +1,4 @@
+# pages/manage_records.py
 import streamlit as st
 import pandas as pd
 from datetime import date
@@ -65,7 +66,7 @@ if exchange_rate == 1.0 and selected_display_currency != "MYR":
 # Page Setup
 # -------------------------------
 st.set_page_config(
-    page_title="Manage Records",
+    page_title="Manage Transaction Records",
     page_icon="logo_circle.png",
     layout="wide"
 )
@@ -208,7 +209,7 @@ with header_container:
             st.session_state.pop("edit_id", None)
             st.switch_page("pages/dashboard.py")
     with col_title:
-        st.markdown("<h1>📝 Manage Financial Records</h1>", unsafe_allow_html=True)
+        st.markdown("<h1>📝 Manage Transaction Records</h1>", unsafe_allow_html=True)
         st.markdown('<p class="subtitle">Review, edit, or delete your transactions anytime.</p>', unsafe_allow_html=True)
     with col_spacer:
         st.write("")
