@@ -266,16 +266,18 @@ def get_top_expense_category(df, exchange_rate, currency_symbol):
     top_amt = expense_df[expense_df['Category'] == top_cat]['Amount'].sum() * exchange_rate
     return f"🔥 <strong>Top Expense Category</strong>: <strong>{top_cat}</strong> → {currency_symbol}{top_amt:,.2f}"
 
+# Spending alert
 def get_spending_alert(df, exchange_rate, currency_symbol):
     if df.empty:
         return "No transactions yet."
     
+    # Create Month column locally
+    df = df.copy()
     df['Month'] = df['Date'].dt.to_period('M')
-    this_month = pd.Timestamp.today().to_period('M')
     
+    this_month = pd.Timestamp.today().to_period('M')
     current = df[(df['Month'] == this_month) & (df['Type'] == 'EXPENSE')]
     if current.empty:
-        # Clear alert context
         if "alert_category" in st.session_state:
             del st.session_state["alert_category"]
         if "alert_amount" in st.session_state:
@@ -297,11 +299,9 @@ def get_spending_alert(df, exchange_rate, currency_symbol):
         avg_amt = avg * exchange_rate
         if spent > 0.8 * avg_amt:
             alerts.append(f"⚠️ <strong>{cat}</strong>: {currency_symbol}{spent:,.0f} (80%+ of avg {currency_symbol}{avg_amt:,.0f})")
-            # Save the FIRST overspending category and its THIS MONTH amount
             st.session_state["alert_category"] = cat
             st.session_state["alert_amount"] = spent
-            break  # Only handle the first overspending category for simplicity
-    
+            break
     if not alerts:
         if "alert_category" in st.session_state:
             del st.session_state["alert_category"]
@@ -313,8 +313,12 @@ def get_spending_alert(df, exchange_rate, currency_symbol):
             "<br>".join(alerts) + 
             "<br><br>💬 Type <strong>'action plan'</strong> to get AI steps to fix this!")
 
+# Budget tips
 def get_budget_tip(df, exchange_rate, currency_symbol):
-    # ✅ Filter to THIS MONTH only
+    if df.empty:
+        return "✅ No transactions yet."
+    
+    df = df.copy()
     df['Month'] = df['Date'].dt.to_period('M')
     this_month = pd.Timestamp.today().to_period('M')
     current_month_expense = df[(df['Month'] == this_month) & (df['Type'] == 'EXPENSE')]
@@ -322,7 +326,6 @@ def get_budget_tip(df, exchange_rate, currency_symbol):
     if current_month_expense.empty:
         return "✅ No expenses this month yet. Great start!"
     
-    # ✅ Get top 3 categories THIS MONTH
     top3 = current_month_expense.groupby('Category')['Amount'].sum().nlargest(3)
     tips = []
     for cat, amt in top3.items():
@@ -332,8 +335,9 @@ def get_budget_tip(df, exchange_rate, currency_symbol):
     
     return ("💡 <strong>Personal Budget Tips (This Month)</strong>:<br><br>" +
             "<br><br>".join(tips) +
-            "<br><br>💬 Type <strong>'detailed tips for [Category]'</strong> (e.g., 'detailed tips for Family') to get specific ways to save!")
-    
+            "<br><br>💬 Type <strong>'detailed tips for [Category]'</strong> (e.g., 'detailed tips for Grocery') to get specific ways to save!")
+
+# Forecast summary
 def get_forecast_summary(df, exchange_rate, currency_symbol):
     if df.empty:
         return "📊 <strong>FORECAST INSIGHT</strong>:<br>No transaction data available for forecasting."
@@ -371,6 +375,7 @@ def get_forecast_summary(df, exchange_rate, currency_symbol):
             f"• <strong>Net</strong>: {currency_symbol}{net_next:,.0f} ({status})<br><br>"
             f"ℹ️ <em>Based on 3-month average. For detailed AI-powered forecasts, visit the <strong>Trend & Prediction</strong> page.</em>")
 
+# Recurring expense audit
 def get_recurring_audit(df, exchange_rate, currency_symbol):
     """Analyze recurring expenses and flag potential waste."""
     recurring = df[(df['Is_Recurring'] == 1) & (df['Type'] == 'EXPENSE')]
@@ -407,6 +412,7 @@ def get_recurring_audit(df, exchange_rate, currency_symbol):
             "<br>".join(lines) + 
             "<br><br>💡 Tip: Cancel unused subscriptions to boost your net balance.")
 
+# Month-over-Month trend
 def get_mom_trend(df, exchange_rate, currency_symbol):
     """Calculate MoM % change in total expenses."""
     expenses = df[df['Type'] == 'EXPENSE'].copy()
@@ -449,6 +455,7 @@ def get_mom_trend(df, exchange_rate, currency_symbol):
     
     return base_msg
 
+# Savings health check
 def get_savings_health(df, exchange_rate, currency_symbol):
     """Calculate savings rate and provide benchmark context."""
     if df.empty:
@@ -490,6 +497,7 @@ def get_savings_health(df, exchange_rate, currency_symbol):
         "💡 <em>Target: ≥20% for long-term security (per global best practices).</em>"
     )
 
+# Cash flow stability
 def get_cash_flow_stability(df, exchange_rate, currency_symbol):
     """Analyze volatility in monthly income and expenses."""
     if df.empty:
@@ -583,37 +591,36 @@ def get_cash_flow_stability(df, exchange_rate, currency_symbol):
 # ---------------------------------------
 # AI-Powered Action Plan
 # ---------------------------------------
+# Spending alert action plan
 def get_alert_action_plan(user_query, df, exchange_rate, currency_symbol):
-    """AI plan for spending alerts (uses alert context only)"""
     if df.empty:
         return "No data to analyze."
     
-    df['Month'] = df['Date'].dt.to_period('M')
+    df = df.copy()
+    df['Month'] = df['Date'].dt.to_period('M')  # ← ADD THIS
     this_month = pd.Timestamp.today().to_period('M')
     current_month_expense = df[(df['Month'] == this_month) & (df['Type'] == 'EXPENSE')]
     
     if current_month_expense.empty:
         return "✅ No expenses this month. Great job!"
     
-    # Use ONLY alert context
     if "alert_category" in st.session_state and "alert_amount" in st.session_state:
         target_cat = st.session_state["alert_category"]
         cat_amt = st.session_state["alert_amount"]
     else:
-        # Fallback to this month's top category
         top_cat_series = current_month_expense.groupby('Category')['Amount'].sum().nlargest(1)
+        if top_cat_series.empty:
+            return "✅ No spending to analyze."
         target_cat = top_cat_series.index[0]
         cat_amt = top_cat_series.iloc[0] * exchange_rate
-    
+
     total_expense = current_month_expense['Amount'].sum() * exchange_rate
-    
     context = f"""
 You are a professional financial coach. 
 User's current month spending in category '{target_cat}': {currency_symbol}{cat_amt:,.0f}
 Total monthly expense: {currency_symbol}{total_expense:,.0f}
 Currency: {selected_currency}
 User asked: "{user_query}"
-
 - Give 4-6 PRACTICAL, actionable steps in numbered list.
 - Use friendly, encouraging tone.
 - Focus on reducing spending in '{target_cat}' this month.
@@ -624,30 +631,28 @@ User asked: "{user_query}"
         return "<strong>YOUR PERSONAL ACTION PLAN</strong><br><br>" + response.text
     except Exception as e:
         return f"AI is busy right now. Error: {str(e)[:50]}..."
-    
+
+# Budget tips action plan
 def get_budget_detailed_tips(user_query, df, exchange_rate, currency_symbol):
-    """AI tips for budget categories (requires category in query)"""
     if df.empty:
         return "No data to analyze."
     
-    df['Month'] = df['Date'].dt.to_period('M')
+    df = df.copy()
+    df['Month'] = df['Date'].dt.to_period('M')  # ← ADD THIS
     this_month = pd.Timestamp.today().to_period('M')
     current_month_expense = df[(df['Month'] == this_month) & (df['Type'] == 'EXPENSE')]
     
     if current_month_expense.empty:
         return "✅ No expenses this month. Great job!"
     
-    # Extract category from "detailed tips for [Category]"
     user_query_clean = user_query.lower().replace("detailed tips for", "").strip()
     detected_cat = None
-    
     for cat in current_month_expense['Category'].unique():
         if cat.lower() in user_query_clean or user_query_clean in cat.lower():
             detected_cat = cat
             break
-    
     if not detected_cat:
-        return "❓ Please specify a category (e.g., 'detailed tips for Family')."
+        return "❓ Please specify a category (e.g., 'detailed tips for Grocery')."
     
     cat_amt = current_month_expense[current_month_expense['Category'] == detected_cat]['Amount'].sum() * exchange_rate
     total_expense = current_month_expense['Amount'].sum() * exchange_rate
@@ -657,7 +662,6 @@ def get_budget_detailed_tips(user_query, df, exchange_rate, currency_symbol):
 You are a professional financial coach. 
 User spent {currency_symbol}{cat_amt:,.0f} on '{detected_cat}' this month.
 They want SPECIFIC ways to save at least 20% ({currency_symbol}{savings_target:,.0f}).
-
 Give 5 CONCRETE, actionable tips to reduce '{detected_cat}' spending:
 - Include real examples (e.g., "Switch to generic brands")
 - Focus on low-effort, high-impact changes
@@ -670,6 +674,7 @@ Give 5 CONCRETE, actionable tips to reduce '{detected_cat}' spending:
     except Exception as e:
         return f"AI is busy right now. Error: {str(e)[:50]}..."
 
+# Month-over-Month trend action plan
 def get_mom_action_plan(user_query, df, exchange_rate, currency_symbol):
     """Generate AI action plan for rising MoM expenses."""
     if df.empty:
@@ -712,7 +717,7 @@ User wants to control increasing spending.
     except Exception as e:
         return f"AI is busy. Error: {str(e)[:50]}..."
 
-
+# Cash flow action plan
 def get_cash_flow_action_plan(user_query, df, exchange_rate, currency_symbol):
     """Generate AI action plan for volatile cash flow."""
     if df.empty:
