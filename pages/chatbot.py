@@ -6,16 +6,39 @@ import sqlite3
 import requests
 from datetime import datetime
 from dotenv import load_dotenv
+
+# -------------------------------
+# FINAL FIX: FORCE MALAYSIA TIME (MYT) – NO MORE UTC CONVERSION!
+# -------------------------------
 from zoneinfo import ZoneInfo
+import pandas as pd
 
-# -------------------------------
-# Malaysia Time Helper (CRITICAL)
-# -------------------------------
-def now_myt():
-    return pd.Timestamp.now(tz=ZoneInfo("Asia/Kuala_Lumpur"))
+# Streamlit Cloud runs in UTC → this forces everything to Malaysia Time
+MYT = ZoneInfo("Asia/Kuala_Lumpur")
 
-def this_month_myt():
-    return now_myt().to_period('M')
+# Monkey patch pandas to always use Malaysia time (this is the nuclear fix)
+_original_now = pd.Timestamp.now
+_original_today = pd.Timestamp.today
+
+def myt_now(tz=None):
+    return _original_now(tz=MYT).normalize()
+
+def myt_today(tz=None):
+    return myt_now(tz)
+
+pd.Timestamp.now = myt_now
+pd.Timestamp.today = myt_today
+
+# Also fix .to_period() to use MYT
+_original_to_period = pd.Series.dt.to_period
+def fixed_to_period(s, freq):
+    if s.dt.tz is None:
+        # Assume naive timestamps are already in MYT
+        return _original_to_period(s, freq)
+    else:
+        return _original_to_period(s.dt.tz_convert(MYT), freq)
+
+pd.Series.dt.to_period = property(fixed_to_period)
 
 # -------------------------------
 # Load environment variables (from .env)
@@ -193,7 +216,7 @@ elif st.session_state.messages and "Financial Assistant" in st.session_state.mes
 # -------------------------------
 # Load Data from finance.db
 # -------------------------------
-@st.cache_data(ttl=300, show_spinner=False, hash_funcs={pd.DataFrame: lambda _: None})
+@st.cache_data(ttl=300)
 def load_data_from_db():
     try:
         conn = sqlite3.connect("finance.db")
@@ -279,11 +302,11 @@ def get_top_expense_category(df, exchange_rate, currency_symbol):
 def get_spending_alert(df, exchange_rate, currency_symbol):
     if df.empty:
         return "No transactions yet."
-   
-    df = df.copy()
-    this_month_myt()
     
-    current = df[(df['Month'] == this_month_myt) & (df['Type'] == 'EXPENSE')]
+    df['Month'] = df['Date'].dt.to_period('M')
+    this_month = pd.Timestamp.today().to_period('M')
+    
+    current = df[(df['Month'] == this_month) & (df['Type'] == 'EXPENSE')]
     if current.empty:
         # Clear alert context
         if "alert_category" in st.session_state:
@@ -292,7 +315,7 @@ def get_spending_alert(df, exchange_rate, currency_symbol):
             del st.session_state["alert_amount"]
         return "✅ No spending this month yet. Great start!"
     
-    past = df[(df['Month'] < this_month_myt) & (df['Type'] == 'EXPENSE')]
+    past = df[(df['Month'] < this_month) & (df['Type'] == 'EXPENSE')]
     if past.empty:
         if "alert_category" in st.session_state:
             del st.session_state["alert_category"]
@@ -324,9 +347,10 @@ def get_spending_alert(df, exchange_rate, currency_symbol):
             "<br><br>💬 Type <strong>'action plan'</strong> to get AI steps to fix this!")
 
 def get_budget_tip(df, exchange_rate, currency_symbol):
-    df = df.copy()
-    this_month_myt()
-    current_month_expense = df[(df['Month'] == this_month_myt) & (df['Type'] == 'EXPENSE')]
+    # ✅ Filter to THIS MONTH only
+    df['Month'] = df['Date'].dt.to_period('M')
+    this_month = pd.Timestamp.today().to_period('M')
+    current_month_expense = df[(df['Month'] == this_month) & (df['Type'] == 'EXPENSE')]
     
     if current_month_expense.empty:
         return "✅ No expenses this month yet. Great start!"
@@ -597,8 +621,9 @@ def get_alert_action_plan(user_query, df, exchange_rate, currency_symbol):
     if df.empty:
         return "No data to analyze."
     
-    this_month_myt()
-    current_month_expense = df[(df['Month'] == this_month_myt) & (df['Type'] == 'EXPENSE')]
+    df['Month'] = df['Date'].dt.to_period('M')
+    this_month = pd.Timestamp.today().to_period('M')
+    current_month_expense = df[(df['Month'] == this_month) & (df['Type'] == 'EXPENSE')]
     
     if current_month_expense.empty:
         return "✅ No expenses this month. Great job!"
@@ -638,8 +663,9 @@ def get_budget_detailed_tips(user_query, df, exchange_rate, currency_symbol):
     if df.empty:
         return "No data to analyze."
     
-    this_month_myt()
-    current_month_expense = df[(df['Month'] == this_month_myt) & (df['Type'] == 'EXPENSE')]
+    df['Month'] = df['Date'].dt.to_period('M')
+    this_month = pd.Timestamp.today().to_period('M')
+    current_month_expense = df[(df['Month'] == this_month) & (df['Type'] == 'EXPENSE')]
     
     if current_month_expense.empty:
         return "✅ No expenses this month. Great job!"
