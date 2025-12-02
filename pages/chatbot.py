@@ -9,10 +9,13 @@ from dotenv import load_dotenv
 from zoneinfo import ZoneInfo
 
 # -------------------------------
-# Malaysia timezone
+# Malaysia Time Helper (CRITICAL)
 # -------------------------------
-MYT = ZoneInfo("Asia/Kuala_Lumpur")
-this_month = pd.Timestamp.now(tz=MYT).to_period('M')
+def now_myt():
+    return pd.Timestamp.now(tz=ZoneInfo("Asia/Kuala_Lumpur"))
+
+def this_month_myt():
+    return now_myt().to_period('M')
 
 # -------------------------------
 # Load environment variables (from .env)
@@ -278,10 +281,9 @@ def get_spending_alert(df, exchange_rate, currency_symbol):
         return "No transactions yet."
    
     df = df.copy()
-    df['Month'] = df['Date'].dt.to_period('M')
-    this_month = pd.Timestamp.now(tz=ZoneInfo("Asia/Kuala_Lumpur")).to_period('M')
+    this_month_myt()
     
-    current = df[(df['Month'] == this_month) & (df['Type'] == 'EXPENSE')]
+    current = df[(df['Month'] == this_month_myt) & (df['Type'] == 'EXPENSE')]
     if current.empty:
         # Clear alert context
         if "alert_category" in st.session_state:
@@ -290,7 +292,7 @@ def get_spending_alert(df, exchange_rate, currency_symbol):
             del st.session_state["alert_amount"]
         return "✅ No spending this month yet. Great start!"
     
-    past = df[(df['Month'] < this_month) & (df['Type'] == 'EXPENSE')]
+    past = df[(df['Month'] < this_month_myt) & (df['Type'] == 'EXPENSE')]
     if past.empty:
         if "alert_category" in st.session_state:
             del st.session_state["alert_category"]
@@ -323,9 +325,8 @@ def get_spending_alert(df, exchange_rate, currency_symbol):
 
 def get_budget_tip(df, exchange_rate, currency_symbol):
     df = df.copy()
-    df['Month'] = df['Date'].dt.to_period('M')
-    this_month = pd.Timestamp.now(tz=ZoneInfo("Asia/Kuala_Lumpur")).to_period('M')
-    current_month_expense = df[(df['Month'] == this_month) & (df['Type'] == 'EXPENSE')]
+    this_month_myt()
+    current_month_expense = df[(df['Month'] == this_month_myt) & (df['Type'] == 'EXPENSE')]
     
     if current_month_expense.empty:
         return "✅ No expenses this month yet. Great start!"
@@ -596,9 +597,8 @@ def get_alert_action_plan(user_query, df, exchange_rate, currency_symbol):
     if df.empty:
         return "No data to analyze."
     
-    df['Month'] = df['Date'].dt.to_period('M')
-    this_month = pd.Timestamp.now(tz=ZoneInfo("Asia/Kuala_Lumpur")).to_period('M')
-    current_month_expense = df[(df['Month'] == this_month) & (df['Type'] == 'EXPENSE')]
+    this_month_myt()
+    current_month_expense = df[(df['Month'] == this_month_myt) & (df['Type'] == 'EXPENSE')]
     
     if current_month_expense.empty:
         return "✅ No expenses this month. Great job!"
@@ -638,9 +638,8 @@ def get_budget_detailed_tips(user_query, df, exchange_rate, currency_symbol):
     if df.empty:
         return "No data to analyze."
     
-    df['Month'] = df['Date'].dt.to_period('M')
-    this_month = pd.Timestamp.now(tz=ZoneInfo("Asia/Kuala_Lumpur")).to_period('M')
-    current_month_expense = df[(df['Month'] == this_month) & (df['Type'] == 'EXPENSE')]
+    this_month_myt()
+    current_month_expense = df[(df['Month'] == this_month_myt) & (df['Type'] == 'EXPENSE')]
     
     if current_month_expense.empty:
         return "✅ No expenses this month. Great job!"
