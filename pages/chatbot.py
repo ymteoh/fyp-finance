@@ -6,6 +6,13 @@ import sqlite3
 import requests
 from datetime import datetime
 from dotenv import load_dotenv
+from zoneinfo import ZoneInfo
+
+# -------------------------------
+# Malaysia timezone
+# -------------------------------
+MYT = ZoneInfo("Asia/Kuala_Lumpur")
+this_month = pd.Timestamp.now(tz=MYT).to_period('M')
 
 # -------------------------------
 # Load environment variables (from .env)
@@ -272,7 +279,7 @@ def get_spending_alert(df, exchange_rate, currency_symbol):
    
     df = df.copy()
     df['Month'] = df['Date'].dt.to_period('M')
-    this_month = pd.Timestamp.today().to_period('M')
+    this_month = pd.Timestamp.now(tz=ZoneInfo("Asia/Kuala_Lumpur")).to_period('M')
     
     current = df[(df['Month'] == this_month) & (df['Type'] == 'EXPENSE')]
     if current.empty:
@@ -315,9 +322,9 @@ def get_spending_alert(df, exchange_rate, currency_symbol):
             "<br><br>💬 Type <strong>'action plan'</strong> to get AI steps to fix this!")
 
 def get_budget_tip(df, exchange_rate, currency_symbol):
-    df = df.copy()                                  # ← ADD THIS LINE
-    df['Month'] = df['Date'].dt.to_period('M')      # ← Now safe
-    this_month = pd.Timestamp.today().to_period('M')
+    df = df.copy()
+    df['Month'] = df['Date'].dt.to_period('M')
+    this_month = pd.Timestamp.now(tz=ZoneInfo("Asia/Kuala_Lumpur")).to_period('M')
     current_month_expense = df[(df['Month'] == this_month) & (df['Type'] == 'EXPENSE')]
     
     if current_month_expense.empty:
@@ -590,7 +597,7 @@ def get_alert_action_plan(user_query, df, exchange_rate, currency_symbol):
         return "No data to analyze."
     
     df['Month'] = df['Date'].dt.to_period('M')
-    this_month = pd.Timestamp.today().to_period('M')
+    this_month = pd.Timestamp.now(tz=ZoneInfo("Asia/Kuala_Lumpur")).to_period('M')
     current_month_expense = df[(df['Month'] == this_month) & (df['Type'] == 'EXPENSE')]
     
     if current_month_expense.empty:
@@ -632,7 +639,7 @@ def get_budget_detailed_tips(user_query, df, exchange_rate, currency_symbol):
         return "No data to analyze."
     
     df['Month'] = df['Date'].dt.to_period('M')
-    this_month = pd.Timestamp.today().to_period('M')
+    this_month = pd.Timestamp.now(tz=ZoneInfo("Asia/Kuala_Lumpur")).to_period('M')
     current_month_expense = df[(df['Month'] == this_month) & (df['Type'] == 'EXPENSE')]
     
     if current_month_expense.empty:
