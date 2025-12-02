@@ -12,5 +12,7 @@ plotly
 kaleido
 xgboost
 scikit-learn
+pytz==2024.2
+
 
 
