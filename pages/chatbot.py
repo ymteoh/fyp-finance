@@ -4,6 +4,7 @@ import os
 import pandas as pd
 import sqlite3
 import requests
+import pytz
 from datetime import datetime
 from dotenv import load_dotenv
 
@@ -270,12 +271,13 @@ def get_top_expense_category(df, exchange_rate, currency_symbol):
 def get_spending_alert(df, exchange_rate, currency_symbol):
     if df.empty:
         return "No transactions yet."
+    # Use Malaysia time for current month
+    malaysia_tz = pytz.timezone("Asia/Kuala_Lumpur")
+    today_malaysia = datetime.now(malaysia_tz).date()
+    this_month = pd.Period(today_malaysia, freq='M')
     
-    # Create Month column locally
     df = df.copy()
     df['Month'] = df['Date'].dt.to_period('M')
-    
-    this_month = pd.Timestamp.today().to_period('M')
     current = df[(df['Month'] == this_month) & (df['Type'] == 'EXPENSE')]
     if current.empty:
         if "alert_category" in st.session_state:
@@ -283,7 +285,6 @@ def get_spending_alert(df, exchange_rate, currency_symbol):
         if "alert_amount" in st.session_state:
             del st.session_state["alert_amount"]
         return "✅ No spending this month yet. Great start!"
-    
     past = df[(df['Month'] < this_month) & (df['Type'] == 'EXPENSE')]
     if past.empty:
         if "alert_category" in st.session_state:
@@ -291,7 +292,6 @@ def get_spending_alert(df, exchange_rate, currency_symbol):
         if "alert_amount" in st.session_state:
             del st.session_state["alert_amount"]
         return "✅ Not enough past data for alerts. Keep tracking!"
-    
     avg_by_cat = past.groupby('Category')['Amount'].sum() / len(past['Month'].unique())
     alerts = []
     for cat, avg in avg_by_cat.items():
@@ -308,7 +308,6 @@ def get_spending_alert(df, exchange_rate, currency_symbol):
         if "alert_amount" in st.session_state:
             del st.session_state["alert_amount"]
         return "✅ All categories under control this month. Excellent!"
-    
     return ("🚨 <strong>Spending Alerts</strong>:<br>" + 
             "<br>".join(alerts) + 
             "<br><br>💬 Type <strong>'action plan'</strong> to get AI steps to fix this!")
@@ -317,22 +316,21 @@ def get_spending_alert(df, exchange_rate, currency_symbol):
 def get_budget_tip(df, exchange_rate, currency_symbol):
     if df.empty:
         return "✅ No transactions yet."
+    malaysia_tz = pytz.timezone("Asia/Kuala_Lumpur")
+    today_malaysia = datetime.now(malaysia_tz).date()
+    this_month = pd.Period(today_malaysia, freq='M')
     
     df = df.copy()
     df['Month'] = df['Date'].dt.to_period('M')
-    this_month = pd.Timestamp.today().to_period('M')
     current_month_expense = df[(df['Month'] == this_month) & (df['Type'] == 'EXPENSE')]
-    
     if current_month_expense.empty:
         return "✅ No expenses this month yet. Great start!"
-    
     top3 = current_month_expense.groupby('Category')['Amount'].sum().nlargest(3)
     tips = []
     for cat, amt in top3.items():
         amt_fmt = amt * exchange_rate
         save_20 = amt_fmt * 0.2
         tips.append(f"💡 <strong>{cat}</strong> → {currency_symbol}{amt_fmt:,.0f}<br>   Cut 20% → Save {currency_symbol}{save_20:,.0f}/month")
-    
     return ("💡 <strong>Personal Budget Tips (This Month)</strong>:<br><br>" +
             "<br><br>".join(tips) +
             "<br><br>💬 Type <strong>'detailed tips for [Category]'</strong> (e.g., 'detailed tips for Grocery') to get specific ways to save!")
@@ -595,15 +593,15 @@ def get_cash_flow_stability(df, exchange_rate, currency_symbol):
 def get_alert_action_plan(user_query, df, exchange_rate, currency_symbol):
     if df.empty:
         return "No data to analyze."
+    malaysia_tz = pytz.timezone("Asia/Kuala_Lumpur")
+    today_malaysia = datetime.now(malaysia_tz).date()
+    this_month = pd.Period(today_malaysia, freq='M')
     
     df = df.copy()
-    df['Month'] = df['Date'].dt.to_period('M')  # ← ADD THIS
-    this_month = pd.Timestamp.today().to_period('M')
+    df['Month'] = df['Date'].dt.to_period('M')
     current_month_expense = df[(df['Month'] == this_month) & (df['Type'] == 'EXPENSE')]
-    
     if current_month_expense.empty:
         return "✅ No expenses this month. Great job!"
-    
     if "alert_category" in st.session_state and "alert_amount" in st.session_state:
         target_cat = st.session_state["alert_category"]
         cat_amt = st.session_state["alert_amount"]
@@ -613,7 +611,6 @@ def get_alert_action_plan(user_query, df, exchange_rate, currency_symbol):
             return "✅ No spending to analyze."
         target_cat = top_cat_series.index[0]
         cat_amt = top_cat_series.iloc[0] * exchange_rate
-
     total_expense = current_month_expense['Amount'].sum() * exchange_rate
     context = f"""
 You are a professional financial coach. 
@@ -636,15 +633,15 @@ User asked: "{user_query}"
 def get_budget_detailed_tips(user_query, df, exchange_rate, currency_symbol):
     if df.empty:
         return "No data to analyze."
+    malaysia_tz = pytz.timezone("Asia/Kuala_Lumpur")
+    today_malaysia = datetime.now(malaysia_tz).date()
+    this_month = pd.Period(today_malaysia, freq='M')
     
     df = df.copy()
-    df['Month'] = df['Date'].dt.to_period('M')  # ← ADD THIS
-    this_month = pd.Timestamp.today().to_period('M')
+    df['Month'] = df['Date'].dt.to_period('M')
     current_month_expense = df[(df['Month'] == this_month) & (df['Type'] == 'EXPENSE')]
-    
     if current_month_expense.empty:
         return "✅ No expenses this month. Great job!"
-    
     user_query_clean = user_query.lower().replace("detailed tips for", "").strip()
     detected_cat = None
     for cat in current_month_expense['Category'].unique():
@@ -653,11 +650,9 @@ def get_budget_detailed_tips(user_query, df, exchange_rate, currency_symbol):
             break
     if not detected_cat:
         return "❓ Please specify a category (e.g., 'detailed tips for Grocery')."
-    
     cat_amt = current_month_expense[current_month_expense['Category'] == detected_cat]['Amount'].sum() * exchange_rate
     total_expense = current_month_expense['Amount'].sum() * exchange_rate
     savings_target = cat_amt * 0.2
-    
     context = f"""
 You are a professional financial coach. 
 User spent {currency_symbol}{cat_amt:,.0f} on '{detected_cat}' this month.
