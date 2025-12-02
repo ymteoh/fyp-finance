@@ -183,7 +183,7 @@ elif st.session_state.messages and "Financial Assistant" in st.session_state.mes
 # -------------------------------
 # Load Data from finance.db
 # -------------------------------
-@st.cache_data(ttl=300)
+@st.cache_data(ttl=300, show_spinner=False, hash_funcs={pd.DataFrame: lambda _: None})
 def load_data_from_db():
     try:
         conn = sqlite3.connect("finance.db")
