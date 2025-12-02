@@ -861,11 +861,15 @@ if st.session_state.is_typing and st.session_state.messages[-1]["role"] == "user
         "financial rollercoaster", "money up and down", "income stable", "stable"
     ]):
         bot_reply = get_cash_flow_stability(df, exchange_rate, currency_symbol)
-
+    
+    # Forecast-related queries (MUST come before generic "income" to avoid conflict)
+    elif any(k in user_query for k in ["forecast", "next month", "future", "predict", "future income", "future spending", "upcoming"]):
+        bot_reply = get_forecast_summary(df, exchange_rate, currency_symbol)
+        
     # Monthly income
     elif any(k in user_query for k in [
         "earnings this month", "income this month", "this month income", "monthly income",
-        "show me my earnings this month", "current income", "money this month"
+        "show me my earnings this month", "current income"
     ]):
         bot_reply = get_total_income(df, exchange_rate, currency_symbol, monthly=True)
 
@@ -894,13 +898,10 @@ if st.session_state.is_typing and st.session_state.messages[-1]["role"] == "user
     elif any(k in user_query for k in ["tip", "budget", "save money", "reduce", "cut"]):
         bot_reply = get_budget_tip(df, exchange_rate, currency_symbol)
 
-    elif any(k in user_query for k in ["forecast", "next month", "future", "predict"]):
-        bot_reply = get_forecast_summary(df, exchange_rate, currency_symbol)
-
     elif any(k in user_query for k in ["last 5", "recent", "latest transactions"]):
         bot_reply = get_last_5_transactions(df, exchange_rate, currency_symbol)
 
-    elif any(k in user_query for k in ["top", "highest", "most spent", "biggest expense"]):
+    elif any(k in user_query for k in ["top", "highest", "most spent", "biggest expense", "spend the most"]):
         bot_reply = get_top_expense_category(df, exchange_rate, currency_symbol)
 
     elif any(k in user_query for k in ["recurring", "subscription", "auto-pay", "monthly bill"]):
@@ -967,3 +968,4 @@ st.markdown(
     f"<p style='text-align:center; font-size:0.9em; color:#c2185b;'>© 2025 Financial Assistant | Currency: {selected_currency} ({currency_symbol}) | Powered by AI</p>",
     unsafe_allow_html=True
 )
+
