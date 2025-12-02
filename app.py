@@ -16,31 +16,17 @@ st.set_page_config(
 )
 
 # Hide sidebar using CSS
-st.markdown(
-    """
-    <style>
-        /* Hide sidebar immediately */
-        [data-testid="stSidebar"] {
-            display: none !important;
-            width: 0 !important;
-            min-width: 0 !important;
-            max-width: 0 !important;
-            overflow: hidden !important;
-            visibility: hidden !important;
-        }
-        /* Remove sidebar margin from main content */
-        .css-1d391kg, .css-fblp2m, .block-container {
-            padding-left: 0 !important;
-            padding-right: 0 !important;
-        }
-        /* Ensure no layout shift */
-        section[data-testid="stSidebar"] + div {
-            margin-left: 0 !important;
-        }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+hide_sidebar = """
+<style>
+    section[data-testid="stSidebar"] {
+        display: none !important;
+    }
+    .css-1d391kg, .css-fblp2m {
+        display: none !important;
+    }
+</style>
+"""
+st.markdown(hide_sidebar, unsafe_allow_html=True)
 
 # -------------------------------
 # Initialize Session State
