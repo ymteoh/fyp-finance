@@ -191,23 +191,21 @@ def load_data_from_db():
             WHERE date IS NOT NULL AND amount IS NOT NULL
         """, conn)
         conn.close()
-        # Parse date as Malaysia local time (avoids UTC shift)
-        malaysia_tz = pytz.timezone("Asia/Kuala_Lumpur")
-        df['Date'] = pd.to_datetime(df['date'], format='%Y-%m-%d')
-        df['Date'] = df['Date'].dt.tz_localize(malaysia_tz)
+        
+        # ✅ Fix: Parse flexible datetime format, strip time if needed later
+        df['Date'] = pd.to_datetime(df['date'], errors='coerce').dt.tz_localize(None)
+        
         df['Amount'] = pd.to_numeric(df['amount'], errors='coerce')
         df['Type'] = df['type'].str.strip().str.upper()
         df['Category'] = df['category'].str.strip().str.title()
         df['Account'] = df['account'].str.strip().str.title()
         df['Title'] = df['title'].str.strip()
         df['Is_Recurring'] = pd.to_numeric(df['is_recurring'], errors='coerce').fillna(0)
+        
         return df.dropna(subset=['Date', 'Amount', 'Type'])
     except Exception as e:
         st.error(f"Database error: {e}")
         return pd.DataFrame()
-
-df = load_data_from_db()
-
 # ------------------
 # Helper Functions 
 # ------------------
@@ -853,3 +851,4 @@ st.markdown(
     f"<p style='text-align:center; font-size:0.9em; color:#c2185b;'>© 2025 Financial Assistant | Currency: {selected_currency} ({currency_symbol}) | Powered by AI</p>",
     unsafe_allow_html=True
 )
+
